@@ -1,0 +1,776 @@
+\documentclass[man]{apa6}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\usepackage{fixltx2e} % provides \textsubscript
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else % if luatex or xelatex
+  \ifxetex
+    \usepackage{mathspec}
+  \else
+    \usepackage{fontspec}
+  \fi
+  \defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+\fi
+% use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+% use microtype if available
+\IfFileExists{microtype.sty}{%
+\usepackage[]{microtype}
+\UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\PassOptionsToPackage{hyphens}{url} % url is loaded by hyperref
+\usepackage[unicode=true]{hyperref}
+\hypersetup{
+            pdftitle={Data analysis in RStudio: Comparative communication. Study 1: Initial appraisal of implicit and explicit differences. Extension: The role of group membership},
+            pdfauthor={Yujing Liang},
+            pdfkeywords={keywords},
+            pdfborder={0 0 0},
+            breaklinks=true}
+\urlstyle{same}  % don't use monospace font for urls
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+\IfFileExists{parskip.sty}{%
+\usepackage{parskip}
+}{% else
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt plus 2pt minus 1pt}
+}
+\setlength{\emergencystretch}{3em}  % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{0}
+% Redefines (sub)paragraphs to behave more like sections
+\ifx\paragraph\undefined\else
+\let\oldparagraph\paragraph
+\renewcommand{\paragraph}[1]{\oldparagraph{#1}\mbox{}}
+\fi
+\ifx\subparagraph\undefined\else
+\let\oldsubparagraph\subparagraph
+\renewcommand{\subparagraph}[1]{\oldsubparagraph{#1}\mbox{}}
+\fi
+
+% set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+
+\shorttitle{Statistics VI Assigment}
+\affiliation{
+\vspace{0.5cm}
+\textsuperscript{1} KU Leuven}
+\keywords{keywords\newline\indent Word count: X}
+\usepackage{csquotes}
+\usepackage{upgreek}
+\captionsetup{font=singlespacing,justification=justified}
+
+\usepackage{longtable}
+\usepackage{lscape}
+\usepackage{multirow}
+\usepackage{tabularx}
+\usepackage[flushleft]{threeparttable}
+\usepackage{threeparttablex}
+
+\newenvironment{lltable}{\begin{landscape}\begin{center}\begin{ThreePartTable}}{\end{ThreePartTable}\end{center}\end{landscape}}
+
+\makeatletter
+\newcommand\LastLTentrywidth{1em}
+\newlength\longtablewidth
+\setlength{\longtablewidth}{1in}
+\newcommand{\getlongtablewidth}{\begingroup \ifcsname LT@\roman{LT@tables}\endcsname \global\longtablewidth=0pt \renewcommand{\LT@entry}[2]{\global\advance\longtablewidth by ##2\relax\gdef\LastLTentrywidth{##2}}\@nameuse{LT@\roman{LT@tables}} \fi \endgroup}
+
+
+\DeclareDelayedFloatFlavor{ThreePartTable}{table}
+\DeclareDelayedFloatFlavor{lltable}{table}
+\DeclareDelayedFloatFlavor*{longtable}{table}
+\makeatletter
+\renewcommand{\efloat@iwrite}[1]{\immediate\expandafter\protected@write\csname efloat@post#1\endcsname{}}
+\makeatother
+
+\title{Data analysis in RStudio: Comparative communication. Study 1: Initial
+appraisal of implicit and explicit differences. Extension: The role of
+group membership}
+\author{Yujing Liang\textsuperscript{1}}
+\date{}
+
+\authornote{
+
+Correspondence concerning this article should be addressed to Yujing
+Liang, Tiensestraat 102, 3000 Leuven. E-mail:
+\href{mailto:yujing.liang@student.kuleuven.com}{\nolinkurl{yujing.liang@student.kuleuven.com}}}
+
+\abstract{
+
+}
+
+\begin{document}
+\maketitle
+
+\begin{figure}
+\centering
+\includegraphics{intern_rcode_files/figure-latex/unnamed-chunk-1-1.pdf}
+\caption{\label{fig:unnamed-chunk-1}Interaction effect of valence and
+membership on the truth of gender-related claims.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics{intern_rcode_files/figure-latex/unnamed-chunk-2-1.pdf}
+\caption{\label{fig:unnamed-chunk-2}Interaction effect of valence and
+membership on the acceptability of gender-related claims.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics{intern_rcode_files/figure-latex/unnamed-chunk-3-1.pdf}
+\caption{\label{fig:unnamed-chunk-3}Interaction effect of valence and
+membership on the truth of age-related claims.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics{intern_rcode_files/figure-latex/unnamed-chunk-4-1.pdf}
+\caption{\label{fig:unnamed-chunk-4}Interaction effect of valence and
+membership on the acceptability of age-related claims.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics{intern_rcode_files/figure-latex/unnamed-chunk-5-1.pdf}
+\caption{\label{fig:unnamed-chunk-5}Three way interaction between
+consistency, valence and membership on the familiarity of gender-related
+claims.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics{intern_rcode_files/figure-latex/unnamed-chunk-6-1.pdf}
+\caption{\label{fig:unnamed-chunk-6}Three way interaction between format,
+valence and membership on the familiarity of gender-related claims.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics{intern_rcode_files/figure-latex/unnamed-chunk-7-1.pdf}
+\caption{\label{fig:unnamed-chunk-7}Three way interaction between
+consistency, valence and membership on the familiarity of age-related
+claims.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics{intern_rcode_files/figure-latex/unnamed-chunk-8-1.pdf}
+\caption{\label{fig:unnamed-chunk-8}Three way interaction between format,
+valence and membership on the familiarity of age-related claims.}
+\end{figure}
+
+\section{Data analysis}\label{data-analysis}
+
+\textbf{RStudio Package.} I used R (Version 3.5.1; R Core Team, 2018)
+and the R-packages \emph{car} (Version 3.0.6; Fox \& Weisberg, 2019;
+Fox, Weisberg, \& Price, 2018), \emph{carData} (Version 3.0.2; Fox et
+al., 2018), \emph{dplyr} (Version 0.8.3; Wickham,
+Fran\textless{}U+00E7\textgreater{}ois, Henry, \& Müller, 2019),
+\emph{emmeans} (Version 1.4.3.1; R. Lenth, 2019), \emph{fancycut}
+(Version 0.1.2; Rich, 2018), \emph{ggplot2} (Version 3.2.1; Wickham,
+2016), \emph{ggpubr} (Version 0.2.3; Kassambara, 2019), \emph{haven}
+(Version 2.2.0; Wickham \& Miller, 2019), \emph{lsmeans} (Version
+2.30.0; R. V. Lenth, 2016), \emph{lsr} (Version 0.5; Navarro, 2015),
+\emph{magrittr} (Version 1.5; Bache \& Wickham, 2014), \emph{MASS}
+(Version 7.3.50; Venables \& Ripley, 2002), \emph{multcompView} (Version
+0.1.7; Graves, Piepho, \& Sundar Dorai-Raj, 2015), \emph{numform}
+(Version 0.5.0; Rinker, 2018), \emph{papaja} (Version 0.1.0.9842; Aust
+\& Barth, 2018), \emph{psych} (Version 1.8.12; Revelle, 2018),
+\emph{purrr} (Version 0.3.3; Henry \& Wickham, 2019), \emph{pwr}
+(Version 1.2.2; Champely, 2018), \emph{reshape2} (Version 1.4.3;
+Wickham, 2007), and \emph{sjstats} (Version 0.17.7; Lüdecke, 2019) for
+all the analyses.
+
+\textbf{Dataset.} I conducted the analysis using the data set
+Study1\_ready\_short.
+
+\textbf{Data cleansing.} I cleaned the data by removing subjects who do
+not identify with any gender category (gender = 3) and the rows with
+missing values (NAs).
+
+\textbf{Subdatasets.} Before executing main analysis in R, I created
+sub-datasets for each dependent variables (truth, acceptability,
+familiarity, stereotypicality, and positivity), for each experiments
+(experiment 1a and 1b).
+
+Before testing the predictions for judgments of truth, I first extracted
+and stacked the columns (\enquote{ID}, \enquote{gender},
+\enquote{Consistency}, \enquote{Format}, \enquote{TruthMenPos},
+\enquote{TruthWomenPos}, \enquote{TruthMenNeg}, \enquote{TruthWomenNeg})
+to create the data set my\_data\_gender\_T. Then, I created the data set
+my\_data\_age\_T, which includes the columns named: \enquote{ID},
+\enquote{gender}, \enquote{Consistency}, \enquote{Format},
+\enquote{TruthOldPos}, \enquote{TruthYoungPos}, \enquote{TruthOldNeg},
+\enquote{TruthYoungNeg}.
+
+In the same way, I created the following subdatasets:
+my\_data\_gender\_A (acceptability), my\_data\_age\_A,
+my\_data\_gender\_F (familiarity), my\_data\_age\_F, my\_data\_gender\_S
+(stereotypicality), my\_data\_age\_S, my\_data\_gender\_P (positivity),
+and my\_data\_age\_P.
+
+\textbf{Gender groups.} The cleaned dataset comprised of 85 male
+subjects and 98 female subjects.
+
+\textbf{Age groups.} Our subjects comprised of 61 younger people, 78
+middle-aged people and 44 older people. Among them, 2 younger subjects
+and 15 older subjects identified themselves as middle-aged. None of the
+subjects identified with the \enquote{wrong} age group (younger
+participants identifying with older people, or older participants
+identifying with younger people). Such that I used their
+\enquote{subjective} age group in the analyses (young: 59, middle-aged:
+95, old: 29). Moreover, I distinguish them between 3 rather than 2 age
+groups: younger, middle-aged, older (middle-aged = 51.91\%
+\textgreater{} 25\%).
+
+\subsection{\texorpdfstring{\textbf{Analysis
+plan.}}{Analysis plan.}}\label{analysis-plan.}
+
+\textbf{Main effect and interaction effect on the judgement of truth.}
+According to the pre-analysis plan that we registered, first, a linear
+regression will be performed on data sets my\_data\_gender\_T and
+my\_data\_age\_T, which involves testing the main effect of valence on
+the judgments of truth. Then a two way ANOVA will be carried out to test
+the interaction effect between group membership and valence and to test
+2 planned contrasts of the interaction.
+
+\textbf{Main effect and interaction effect on the judgement of social
+acceptability.} Accordingly, the regression analysis on data sets
+my\_data\_gender\_A and my\_data\_age\_A involve testing the main effect
+of valence on the judgments of acceptability, and testing the
+interaction effect between group membership and valence (1 planned
+contrast).
+
+\textbf{Exploratory analysis.} In the exploratory analysis, the
+regression analysis will be performed on related subdatasets. The
+analysis involves testing the main effect of group membership and the
+interaction effect between group membership and valence on the perceived
+familiarity, stereotypicality and positivity. Further, a linear
+regression will be carried out to test if consistency and format of the
+claims affect how group membership and valence affect various dependent
+variables.
+
+\section{Results of Judgments of
+truth}\label{results-of-judgments-of-truth}
+
+\textbf{Analyses for Experiment 1a (Gender-related claims).} A
+significant main effect of valence (positive, negative) on the judgments
+of truth (\(t [730]\) = -2.40 , \emph{p} = .017) was found, with
+positively valenced claims (\emph{M} = 4.15, \emph{SD} = 1.05) receiving
+higher scores on truth than negatively valenced ones (\emph{M} = 3.97,
+\emph{SD} = 1.05).
+
+Additionally no significant interaction was found between valence and
+group membership (ingroup, outgroup) on the judgments of truth
+(\(F [1, 728]\) = 2.74, \emph{p} = .098).
+
+Planned contrasts showed that subjects believed positively valenced
+claims were significantly truer than negative valenced ones when the
+claims are targeted at their ingroup (\(t [728]\) = -2.87 , \emph{p} =
+.004), but there were no difference between valences when the claims are
+targeted at their outgroup (\(t [728]\) = -0.53 , \emph{p} = .598).
+Moreover, no differences were found between ingroupers and outgroupers
+on the the judgement of truth in the positive condition (\(t [728]\) =
+-1.68 , \emph{p} = .093) , and negative condition (\(t [728]\) = 0.66 ,
+\emph{p} = .511).
+
+\textbf{Analyses for Experiment 1b (Age-related claims).} A significant
+main effect of valence (positive, negative) on the judgments of truth
+(\(t [730]\) = -3.80 , \emph{p} = .000) was found, with positively
+valenced claims (\emph{M} = 4.09, \emph{SD} = 1.21) receiving higher
+scores on truth than negatively valenced ones (\emph{M} = 3.77,
+\emph{SD} = 1.08).
+
+Additionally no significant interaction was found between valence and
+group membership (ingroup, outgroup, middle-aged) on the judgments of
+truth (\(F [2, 726]\) = 0.68, \emph{p} = .505).
+
+Planned contrasts showed that subjects tend to rate positively valenced
+claims as significantly truer than negative valenced ones in the ingroup
+condition (\(t [726]\) = -2.53 , \emph{p} = .011) and in the outgroup
+condition (\(t [726]\) = -2.38 , \emph{p} = .018). Yet among middle-aged
+people, the difference is marginally significant (\(t [726]\) = -1.93 ,
+\emph{p} = .054). Futher, there were no significant difference between
+ingroupers and outgroupers on the the judgement of truth when the claims
+are either positively valenced (\(t [726]\) = -0.35 , \emph{p} = .933),
+or negatively valenced (\(t [726]\) = -0.51 , \emph{p} = .865).
+
+\section{Results of Judgments of
+acceptability}\label{results-of-judgments-of-acceptability}
+
+\textbf{Analyses for Experiment 1a (Gender-related claims).} A
+significant main effect of valence (positive, negative) on the judgments
+of acceptability (\(t [730]\) = -6.38 , \emph{p} = .000) was found, with
+positively valenced claims (\emph{M} = 4.51, \emph{SD} = 1.34) receiving
+higher scores on acceptability than negatively valenced ones (\emph{M} =
+3.88, \emph{SD} = 1.32).
+
+Additionally no significant interaction was found between valence and
+group membership (ingroup, outgroup) on the judgments of acceptability
+(\(F [1, 728]\) = 2.09, \emph{p} = .149).
+
+Planned contrasts showed that subjects are not significantly more
+acceptable to positive claims that targeted at their ingroup than those
+targeted at outgroup (\(t [728]\) = -0.96 , \emph{p} = .338). Also,
+subjects are not significantly more acceptable to negative claims which
+targeted at their outgroup than those targeted at ingroup (\(t [728]\) =
+1.09 , \emph{p} = .278).
+
+\textbf{Analyses for Experiment 1b (Age-related claims).} A significant
+main effect of valence (positive, negative) on the judgments of
+acceptability (\(t [730]\) = -8.41 , \emph{p} = .000) was found, with
+positively valenced claims (\emph{M} = 4.67, \emph{SD} = 1.35) receiving
+higher scores on acceptability than negatively valenced ones (\emph{M} =
+3.85, \emph{SD} = 1.27).
+
+Additionally no significant interaction was found between valence and
+group membership (ingroup, outgroup, middle-aged) on the judgments of
+acceptability (\(F [2, 726]\) = 0.70, \emph{p} = .498).
+
+Planned contrasts showed that subjects are not significantly more
+acceptable to positive claims that targeted at their ingroup than those
+targeted at outgroup (\(t [726]\) = 0.21 , \emph{p} = .977). Also,
+subjects are not significantly more acceptable to negative claims which
+targeted at their outgroup than those targeted at ingroup (\(t [726]\) =
+0.03 , \emph{p} = .999).
+
+\section{Results of exploratory
+analysis}\label{results-of-exploratory-analysis}
+
+\subsection{\texorpdfstring{\textbf{Judgments of
+familiarity}}{Judgments of familiarity}}\label{judgments-of-familiarity}
+
+\textbf{Analyses for Experiment 1a (Gender-related claims).} There was
+no significant main effect of membership (ingroup, outgroup) on the
+judgments of familiarity (\(t [730]\) = -0.18 , \emph{p} = .857), with
+ingroup-targeted cliams (\emph{M} = 4.09, \emph{SD} = 1.39) receiving
+slightly higher scores on familiarity than those targeted at outgoup
+(\emph{M} = 4.08, \emph{SD} = 1.41).
+
+Additionally no significant interaction was found between valence
+(positive, negative) and group membership on the judgments of
+familiarity (\(F [1, 728]\) = 0.03, \emph{p} = .866).
+
+The three-way interaction between consistency (stereotypical,
+counter-stereotypical), valence and group membership is also not
+significant (\(F [1, 724]\) = 0.07, \emph{p} = .785). The three-way
+interaction between format (implicit, explicit), valence and group
+membership is also not significant (\(F [1, 724]\) = 0.46, \emph{p} =
+.497).
+
+\textbf{Analyses for Experiment 1b (Age-related claims).} A one-way
+ANOVA was conducted to compare the effect of group membership on
+judgments of familiarity, in ingroup condition (\emph{M} = 4.09,
+\emph{SD} = 1.56), outgroup condition (\emph{M} = 4.18, \emph{SD} =
+1.51) and middle group condition (\emph{M} = 3.97, \emph{SD} = 1.57). No
+significant effect of membership on perceived familiarity
+(\(F [2, 729]\) = 1.19 , \emph{p} = .305) was found.
+
+Additionally no significant interaction was found between valence
+(positive, negative) and group membership on the judgments of
+familiarity (\(F [2, 726]\) = 0.43, \emph{p} = .653).
+
+The three-way interaction between consistency (stereotypical,
+counter-stereotypical), valence and group membership is also not
+significant (\(F [2, 720]\) = 1.34, \emph{p} = .262). The three-way
+interaction between format (implicit, explicit), valence and group
+membership is also not significant (\(F [2, 720]\) = 0.23, \emph{p} =
+.793). All the Post-Hoc Contrasts are also not significant, except that
+while the presented claims are explicit (format level=2), membership has
+marginally significant effect on the judgement of familiarity
+(\(F [2, 342]\) = 2.48, \emph{p} = .085).
+
+\subsection{\texorpdfstring{\textbf{Judgments of
+stereotypicality}}{Judgments of stereotypicality}}\label{judgments-of-stereotypicality}
+
+\textbf{Analyses for Experiment 1a (Gender-related claims).} There was
+no significant main effect of membership (ingroup, outgroup) on the
+judgments of stereotypicality (\(t [730]\) = -0.54 , \emph{p} = .591),
+with ingroup-targeted cliams (\emph{M} = 4.47, \emph{SD} = 1.48)
+receiving slightly higher scores on stereotypicality than those targeted
+at outgoup (\emph{M} = 4.41, \emph{SD} = 1.51).
+
+Additionally no significant interaction was found between valence
+(positive, negative) and group membership on the judgments of
+stereotypicality (\(F [1, 728]\) = 0.03, \emph{p} = .855).
+
+The three-way interaction between consistency (stereotypical,
+counter-stereotypical), valence and group membership is also not
+significant (\(F [1, 724]\) = 0.46, \emph{p} = .496). The three-way
+interaction between format (implicit, explicit), valence and group
+membership is also not significant (\(F [1, 724]\) = 0.14, \emph{p} =
+.711).
+
+\textbf{Analyses for Experiment 1b (Age-related claims).} A one-way
+ANOVA was conducted to compare the effect of group membership on
+judgments of stereotypicality, in ingroup condition (\emph{M} = 4.56,
+\emph{SD} = 1.57), outgroup condition (\emph{M} = 4.59, \emph{SD} =
+1.58) and middle group condition (\emph{M} = 4.01, \emph{SD} = 1.57). A
+significant effect of membership on perceived stereotypicality
+(\(F [2, 729]\) = 11.69 , \emph{p} = .000) was found.
+
+Specifically, middle group members tend to judge positive cliams as
+significantly less stereotypical, compared to ourgoupers(\(t [726]\) =
+3.26 , \emph{p} = .003), and marginally significantly less stereotypical
+compared to ingroupers (\(t [726]\) = 2.26 , \emph{p} = .062). Also,
+middle groupers perceive the negatively velanced cliams as significantly
+less stereotypical, compared to ingroupers (\(t [726]\) = 3.13 ,
+\emph{p} = .005) and ourgoupers (\(t [726]\) = 2.45 , \emph{p} = .038).
+Additionally, subjects perceive positively valenced cliams as less
+stereotypical when cliams are targeted at their ingroup than those
+targeted at outgroup (\(t [726]\) = -0.85 , \emph{p} = .670), however,
+when the cliams are negatively velanced, ingroupers would perceive
+presented claims as more sterotypical compared to outgroupers
+(\(t [726]\) = 0.58 , \emph{p} = .833). Both of the differences are not
+significant at the alpha level of 0.05.
+
+Additionally no significant interaction was found between valence
+(positive, negative) and group membership on the judgments of
+stereotypicality (\(F [2, 726]\) = 0.51, \emph{p} = .600).
+
+The three-way interaction between consistency (stereotypical,
+counter-stereotypical), valence and group membership is not significant
+(\(F [2, 720]\) = 0.86, \emph{p} = .424). The three-way interaction
+between format (implicit, explicit), valence and group membership is
+also not significant (\(F [2, 720]\) = 0.15, \emph{p} = .861).
+
+\subsection{\texorpdfstring{\textbf{Judgments of
+positivity}}{Judgments of positivity}}\label{judgments-of-positivity}
+
+\textbf{Analyses for Experiment 1a (Gender-related claims).} There was
+no significant main effect of membership (ingroup, outgroup) on the
+judgments of positivity (\(t [730]\) = 0.13 , \emph{p} = .900), with
+outgroup-targeted cliams (\emph{M} = 3.79, \emph{SD} = 1.44) receiving
+slightly higher scores on positivity than those targeted at ingroup
+(\emph{M} = 3.77, \emph{SD} = 1.51).
+
+Additionally there is a marginally significant interaction was found
+between valence (positive, negative) and group membership on the
+judgments of positivity (\(F [1, 728]\) = 3.14, \emph{p} = .077).
+
+Post-hoc comparisons showed subjects believed that positively valenced
+claims were significantly more positive than negative valenced ones both
+when the they are targeted at ingroup (\(t [728]\) = 16.71 , \emph{p} =
+.000) and outgroup (\(t [728]\) = 14.20 , \emph{p} = .000). Moreover, no
+significant differences were found between ingroupers and outgroupers on
+the the judgement of positivity in the positive condition (\(t [728]\) =
+1.14 , \emph{p} = .255) , and negative condition (\(t [728]\) = -1.37 ,
+\emph{p} = .172).
+
+The three-way interaction between consistency (stereotypical,
+counter-stereotypical), valence and group membership is also not
+significant (\(F [1, 724]\) = 0.06, \emph{p} = .803). The three-way
+interaction between format (implicit, explicit), valence and group
+membership is also not significant (\(F [1, 724]\) = 0.08, \emph{p} =
+.779).
+
+\textbf{Analyses for Experiment 1b (Age-related claims).} A one-way
+between subjects ANOVA was conducted to compare the effect of group
+membership on judgments of positivity, in ingroup condition (\emph{M} =
+3.74, \emph{SD} = 1.46), outgroup condition (\emph{M} = 3.73, \emph{SD}
+= 1.46) and middle group condition (\emph{M} = 3.70, \emph{SD} = 1.54).
+No significant effect of membership on perceived positivity
+(\(F [2, 729]\) = 0.07 , \emph{p} = .933) was found.
+
+Additionally no significant interaction was found between valence
+(positive, negative) and group membership on the judgments of positivity
+(\(F [2, 726]\) = 0.02, \emph{p} = .980).
+
+The three-way interaction between consistency (stereotypical,
+counter-stereotypical), valence and group membership is also not
+significant (\(F [2, 720]\) = 0.23, \emph{p} = .797). The three-way
+interaction between format (implicit, explicit), valence and group
+membership is significant (\(F [2, 720]\) = 3.38, \emph{p} = .035).
+Specifically, valence (positive, negative) has a significant effect on
+positivity (\(F [1, 720]\) = 655.26, \emph{p} = .000). Also, there is a
+significant interaction between format and valence (\(F [1, 720]\) =
+59.55, \emph{p} = .000).
+
+\begin{figure}
+\centering
+\includegraphics{intern_rcode_files/figure-latex/unnamed-chunk-9-1.pdf}
+\caption{\label{fig:unnamed-chunk-9}Three way interaction between
+consistency, valence and membership on the stereotypicality of
+gender-related claims.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics{intern_rcode_files/figure-latex/unnamed-chunk-10-1.pdf}
+\caption{\label{fig:unnamed-chunk-10}Three way interaction between format,
+valence and membership on the stereotypicality of gender-related
+claims.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics{intern_rcode_files/figure-latex/unnamed-chunk-11-1.pdf}
+\caption{\label{fig:unnamed-chunk-11}Three way interaction between
+consistency, valence and membership on the stereotypicality of
+age-related claims.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics{intern_rcode_files/figure-latex/unnamed-chunk-12-1.pdf}
+\caption{\label{fig:unnamed-chunk-12}Three way interaction between format,
+valence and membership on the stereotypicality of age-related claims.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics{intern_rcode_files/figure-latex/unnamed-chunk-13-1.pdf}
+\caption{\label{fig:unnamed-chunk-13}Three way interaction between
+consistency, valence and membership on the positivity of gender-related
+claims.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics{intern_rcode_files/figure-latex/unnamed-chunk-14-1.pdf}
+\caption{\label{fig:unnamed-chunk-14}Three way interaction between format,
+valence and membership on the positivity of gender-related claims.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics{intern_rcode_files/figure-latex/unnamed-chunk-15-1.pdf}
+\caption{\label{fig:unnamed-chunk-15}Three way interaction between
+consistency, valence and membership on the positivity of age-related
+claims.}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics{intern_rcode_files/figure-latex/unnamed-chunk-16-1.pdf}
+\caption{\label{fig:unnamed-chunk-16}Three way interaction between format,
+valence and membership on the positivity of age-related claims.}
+\end{figure}
+
+\newpage
+
+\section{References}\label{references}
+
+\begingroup
+\setlength{\parindent}{-0.5in} \setlength{\leftskip}{0.5in}
+
+\hypertarget{refs}{}
+\hypertarget{ref-R-papaja}{}
+Aust, F., \& Barth, M. (2018). \emph{papaja: Create APA manuscripts with
+R Markdown}. Retrieved from \url{https://github.com/crsh/papaja}
+
+\hypertarget{ref-R-magrittr}{}
+Bache, S. M., \& Wickham, H. (2014). \emph{Magrittr: A forward-pipe
+operator for r}. Retrieved from
+\url{https://CRAN.R-project.org/package=magrittr}
+
+\hypertarget{ref-R-pwr}{}
+Champely, S. (2018). \emph{Pwr: Basic functions for power analysis}.
+Retrieved from \url{https://CRAN.R-project.org/package=pwr}
+
+\hypertarget{ref-R-car}{}
+Fox, J., \& Weisberg, S. (2019). \emph{An R companion to applied
+regression} (Third.). Thousand Oaks CA: Sage. Retrieved from
+\url{https://socialsciences.mcmaster.ca/jfox/Books/Companion/}
+
+\hypertarget{ref-R-carData}{}
+Fox, J., Weisberg, S., \& Price, B. (2018). \emph{CarData: Companion to
+applied regression data sets}. Retrieved from
+\url{https://CRAN.R-project.org/package=carData}
+
+\hypertarget{ref-R-multcompView}{}
+Graves, S., Piepho, H.-P., \& Sundar Dorai-Raj, L. S. with help from.
+(2015). \emph{MultcompView: Visualizations of paired comparisons}.
+Retrieved from \url{https://CRAN.R-project.org/package=multcompView}
+
+\hypertarget{ref-R-purrr}{}
+Henry, L., \& Wickham, H. (2019). \emph{Purrr: Functional programming
+tools}. Retrieved from \url{https://CRAN.R-project.org/package=purrr}
+
+\hypertarget{ref-R-ggpubr}{}
+Kassambara, A. (2019). \emph{Ggpubr: 'Ggplot2' based publication ready
+plots}. Retrieved from \url{https://CRAN.R-project.org/package=ggpubr}
+
+\hypertarget{ref-R-emmeans}{}
+Lenth, R. (2019). \emph{Emmeans: Estimated marginal means, aka
+least-squares means}. Retrieved from
+\url{https://CRAN.R-project.org/package=emmeans}
+
+\hypertarget{ref-R-lsmeans}{}
+Lenth, R. V. (2016). Least-squares means: The R package lsmeans.
+\emph{Journal of Statistical Software}, \emph{69}(1), 1--33.
+doi:\href{https://doi.org/10.18637/jss.v069.i01}{10.18637/jss.v069.i01}
+
+\hypertarget{ref-R-sjstats}{}
+Lüdecke, D. (2019). \emph{Sjstats: Statistical functions for regression
+models (version 0.17.5)}.
+doi:\href{https://doi.org/10.5281/zenodo.1284472}{10.5281/zenodo.1284472}
+
+\hypertarget{ref-R-lsr}{}
+Navarro, D. (2015). \emph{Learning statistics with r: A tutorial for
+psychology students and other beginners. (version 0.5)}. Adelaide,
+Australia: University of Adelaide. Retrieved from
+\url{http://ua.edu.au/ccs/teaching/lsr}
+
+\hypertarget{ref-R-base}{}
+R Core Team. (2018). \emph{R: A language and environment for statistical
+computing}. Vienna, Austria: R Foundation for Statistical Computing.
+Retrieved from \url{https://www.R-project.org/}
+
+\hypertarget{ref-R-psych}{}
+Revelle, W. (2018). \emph{Psych: Procedures for psychological,
+psychometric, and personality research}. Evanston, Illinois:
+Northwestern University. Retrieved from
+\url{https://CRAN.R-project.org/package=psych}
+
+\hypertarget{ref-R-fancycut}{}
+Rich, A. (2018). \emph{Fancycut: A fancy version of 'base::cut'}.
+Retrieved from \url{https://CRAN.R-project.org/package=fancycut}
+
+\hypertarget{ref-R-numform}{}
+Rinker, T. W. (2018). \emph{numform: A publication style number and plot
+formatter}. Retrieved from \url{http://github.com/trinker/numform}
+
+\hypertarget{ref-R-MASS}{}
+Venables, W. N., \& Ripley, B. D. (2002). \emph{Modern applied
+statistics with s} (Fourth.). New York: Springer. Retrieved from
+\url{http://www.stats.ox.ac.uk/pub/MASS4}
+
+\hypertarget{ref-R-reshape2}{}
+Wickham, H. (2007). Reshaping data with the reshape package.
+\emph{Journal of Statistical Software}, \emph{21}(12), 1--20. Retrieved
+from \url{http://www.jstatsoft.org/v21/i12/}
+
+\hypertarget{ref-R-ggplot2}{}
+Wickham, H. (2016). \emph{Ggplot2: Elegant graphics for data analysis}.
+Springer-Verlag New York. Retrieved from
+\url{https://ggplot2.tidyverse.org}
+
+\hypertarget{ref-R-haven}{}
+Wickham, H., \& Miller, E. (2019). \emph{Haven: Import and export
+'spss', 'stata' and 'sas' files}. Retrieved from
+\url{https://CRAN.R-project.org/package=haven}
+
+\hypertarget{ref-R-dplyr}{}
+Wickham, H., Fran\textless{}U+00E7\textgreater{}ois, R., Henry, L., \&
+Müller, K. (2019). \emph{Dplyr: A grammar of data manipulation}.
+Retrieved from \url{https://CRAN.R-project.org/package=dplyr}
+
+\hypertarget{ref-R-papaja}{}
+Aust, F., \& Barth, M. (2018). \emph{papaja: Create APA manuscripts with
+R Markdown}. Retrieved from \url{https://github.com/crsh/papaja}
+
+\hypertarget{ref-R-magrittr}{}
+Bache, S. M., \& Wickham, H. (2014). \emph{Magrittr: A forward-pipe
+operator for r}. Retrieved from
+\url{https://CRAN.R-project.org/package=magrittr}
+
+\hypertarget{ref-R-pwr}{}
+Champely, S. (2018). \emph{Pwr: Basic functions for power analysis}.
+Retrieved from \url{https://CRAN.R-project.org/package=pwr}
+
+\hypertarget{ref-R-car}{}
+Fox, J., \& Weisberg, S. (2019). \emph{An R companion to applied
+regression} (Third.). Thousand Oaks CA: Sage. Retrieved from
+\url{https://socialsciences.mcmaster.ca/jfox/Books/Companion/}
+
+\hypertarget{ref-R-carData}{}
+Fox, J., Weisberg, S., \& Price, B. (2018). \emph{CarData: Companion to
+applied regression data sets}. Retrieved from
+\url{https://CRAN.R-project.org/package=carData}
+
+\hypertarget{ref-R-multcompView}{}
+Graves, S., Piepho, H.-P., \& Sundar Dorai-Raj, L. S. with help from.
+(2015). \emph{MultcompView: Visualizations of paired comparisons}.
+Retrieved from \url{https://CRAN.R-project.org/package=multcompView}
+
+\hypertarget{ref-R-purrr}{}
+Henry, L., \& Wickham, H. (2019). \emph{Purrr: Functional programming
+tools}. Retrieved from \url{https://CRAN.R-project.org/package=purrr}
+
+\hypertarget{ref-R-ggpubr}{}
+Kassambara, A. (2019). \emph{Ggpubr: 'Ggplot2' based publication ready
+plots}. Retrieved from \url{https://CRAN.R-project.org/package=ggpubr}
+
+\hypertarget{ref-R-emmeans}{}
+Lenth, R. (2019). \emph{Emmeans: Estimated marginal means, aka
+least-squares means}. Retrieved from
+\url{https://CRAN.R-project.org/package=emmeans}
+
+\hypertarget{ref-R-lsmeans}{}
+Lenth, R. V. (2016). Least-squares means: The R package lsmeans.
+\emph{Journal of Statistical Software}, \emph{69}(1), 1--33.
+doi:\href{https://doi.org/10.18637/jss.v069.i01}{10.18637/jss.v069.i01}
+
+\hypertarget{ref-R-sjstats}{}
+Lüdecke, D. (2019). \emph{Sjstats: Statistical functions for regression
+models (version 0.17.5)}.
+doi:\href{https://doi.org/10.5281/zenodo.1284472}{10.5281/zenodo.1284472}
+
+\hypertarget{ref-R-lsr}{}
+Navarro, D. (2015). \emph{Learning statistics with r: A tutorial for
+psychology students and other beginners. (version 0.5)}. Adelaide,
+Australia: University of Adelaide. Retrieved from
+\url{http://ua.edu.au/ccs/teaching/lsr}
+
+\hypertarget{ref-R-base}{}
+R Core Team. (2018). \emph{R: A language and environment for statistical
+computing}. Vienna, Austria: R Foundation for Statistical Computing.
+Retrieved from \url{https://www.R-project.org/}
+
+\hypertarget{ref-R-psych}{}
+Revelle, W. (2018). \emph{Psych: Procedures for psychological,
+psychometric, and personality research}. Evanston, Illinois:
+Northwestern University. Retrieved from
+\url{https://CRAN.R-project.org/package=psych}
+
+\hypertarget{ref-R-fancycut}{}
+Rich, A. (2018). \emph{Fancycut: A fancy version of 'base::cut'}.
+Retrieved from \url{https://CRAN.R-project.org/package=fancycut}
+
+\hypertarget{ref-R-numform}{}
+Rinker, T. W. (2018). \emph{numform: A publication style number and plot
+formatter}. Retrieved from \url{http://github.com/trinker/numform}
+
+\hypertarget{ref-R-MASS}{}
+Venables, W. N., \& Ripley, B. D. (2002). \emph{Modern applied
+statistics with s} (Fourth.). New York: Springer. Retrieved from
+\url{http://www.stats.ox.ac.uk/pub/MASS4}
+
+\hypertarget{ref-R-reshape2}{}
+Wickham, H. (2007). Reshaping data with the reshape package.
+\emph{Journal of Statistical Software}, \emph{21}(12), 1--20. Retrieved
+from \url{http://www.jstatsoft.org/v21/i12/}
+
+\hypertarget{ref-R-ggplot2}{}
+Wickham, H. (2016). \emph{Ggplot2: Elegant graphics for data analysis}.
+Springer-Verlag New York. Retrieved from
+\url{https://ggplot2.tidyverse.org}
+
+\hypertarget{ref-R-haven}{}
+Wickham, H., \& Miller, E. (2019). \emph{Haven: Import and export
+'spss', 'stata' and 'sas' files}. Retrieved from
+\url{https://CRAN.R-project.org/package=haven}
+
+\hypertarget{ref-R-dplyr}{}
+Wickham, H., Fran\textless{}U+00E7\textgreater{}ois, R., Henry, L., \&
+Müller, K. (2019). \emph{Dplyr: A grammar of data manipulation}.
+Retrieved from \url{https://CRAN.R-project.org/package=dplyr}
+
+\endgroup
+
+\end{document}

@@ -1,0 +1,1894 @@
+
+---
+title             : "Data analysis in RStudio: Comparative communication. Study 1: Initial appraisal of implicit and explicit differences. Extension: The role of group membership"
+shorttitle        : "Statistics VI Assigment"
+
+author: 
+  - name          : "Yujing Liang"
+    affiliation   : "1"
+    corresponding : yes    # Define only one corresponding author
+    address       : "Tiensestraat 102, 3000 Leuven"
+    email         : "yujing.liang@student.kuleuven.com"
+
+affiliation:
+  - id            : "1"
+    institution   : "KU Leuven"
+
+keywords          : "keywords"
+wordcount         : "X"
+
+bibliography      : ["r-references.bib"]
+
+floatsintext      : no
+figurelist        : no
+tablelist         : no
+footnotelist      : no
+linenumbers       : no
+mask              : no
+draft             : no
+
+documentclass     : "apa6"
+classoption       : "man"
+output            : papaja::apa6_pdf
+---
+
+
+```{r analysis-set, include = FALSE, echo = FALSE}
+rm(list=ls())
+# Set your working dir as the current dir
+setwd("C:/Users/18829.DESKTOP-PG2BS5Q/Desktop/intern/analysis")
+dev = "png"
+# Read data
+library("haven")
+my_data_original <- read_sav("Study1_ready_short.sav")
+my_data_original <- na.omit(my_data_original)
+my_data_original <- my_data_original[my_data_original$gender!=3, ]
+summary(my_data_original)
+
+# loading libraries used for analysis
+library("papaja")
+library("pwr")
+library("MASS")
+library("psych")
+library("ggpubr")
+library("lsmeans")
+library("multcompView")
+library("ggpubr")
+library("sjstats")
+library("car")
+library("ggplot2")
+library("fancycut")
+library("numform")
+```
+
+```{r Truth_gender, include = FALSE, result="axis"}
+# Extract columns
+my_data_extracted_G_T <- subset(my_data_original, select = c("ID", "gender", "Consistency","Format",
+                                                         "TruthMenPos", "TruthWomenPos", "TruthMenNeg", "TruthWomenNeg"))
+summary(my_data_extracted_G_T)
+
+table(my_data_original$gender)
+summary(my_data_original)
+
+# Stack columns
+library(reshape2)
+my_data_gender_T <- melt(my_data_extracted_G_T, id.vars=1:4)
+my_data_gender_T
+
+# Define factors
+str(my_data_gender_T)
+#gender
+gender<- as.factor(my_data_gender_T$gender)
+gender<- factor(gender,c(1,2),labels = c("Man","Woman"))
+consistency<- as.factor(my_data_gender_T$Consistency)
+
+#membership
+my_data_gender_T$membership <- ifelse(my_data_gender_T$gender==1 & my_data_gender_T$variable=="TruthMenPos", "1","0")
+my_data_gender_T$membership[my_data_gender_T$gender==1 & my_data_gender_T$variable=="TruthMenNeg"] <- 1
+my_data_gender_T$membership[my_data_gender_T$gender==2 & my_data_gender_T$variable=="TruthWomenPos"] <- 1
+my_data_gender_T$membership[my_data_gender_T$gender==2 & my_data_gender_T$variable=="TruthWomenNeg"] <- 1
+my_data_gender_T$membership<- factor(my_data_gender_T$membership,c(1,0),labels = c("Ingroup","Outgroup"))
+#valence
+my_data_gender_T$valence <- ifelse(my_data_gender_T$variable=="TruthMenPos", "1","0")
+my_data_gender_T$valence[my_data_gender_T$variable=="TruthWomenPos"] <- 1
+my_data_gender_T$valence<- factor(my_data_gender_T$valence,c(1,0),labels = c("Positive","Negative"))
+summary(my_data_gender_T)
+
+# Get descriptives
+library(psych) 
+Descriptives_GT_TTEST<-describeBy(my_data_gender_T, 
+           group = my_data_gender_T$valence)
+
+# Truth
+#Main effect of valence, prediction: positive > negative 
+#Independent 2-group t-test
+Ttest_GT<- lm(my_data_gender_T$value~my_data_gender_T$valence, alternative = "two.sided")
+sum_Ttest_GT<- summary(Ttest_GT)
+```
+
+```{r Truth_gender2, include = FALSE, result="axis"}
+#Cohen¡¯s d for two-sample t-test
+library(lsr)
+cohensD(value~valence,
+        data = my_data_gender_T)
+
+# Truth: Group membership x Valence Interaction 
+Interaction_GT  <- aov(value ~ valence*membership,data=my_data_gender_T)
+sum_Interaction_GT <- summary(Interaction_GT)
+##table(my_data_gender_T$valence, my_data_gender_T$membership)
+
+# Effect size
+library(sjstats)
+library(car)
+omega_sq(Interaction_GT)
+##Field (2013) suggests the following interpretation heuristics:
+##Omega Squared = 0 - 0.01: Very small
+##Omega Squared = 0.01 - 0.06: Small
+##Omega Squared = 0.06 - 0.14: Medium
+##Omega Squared > 0.14: Large
+
+library("dplyr")
+groups <- group_by(my_data_gender_T, valence, membership)
+plot.data <- summarise(groups,
+                       mean = mean(value, na.rm=TRUE),
+                       sd = sd(value, na.rm=TRUE),
+                       n = n(),
+                       se=sd/sqrt(n),
+                       ci = qt(0.975,df=n-1)*se)
+ggplot(plot.data, aes(x=valence, y=mean, fill = membership)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  ylim(0,7)+
+  geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.2, position=position_dodge(.9)) +
+  ggtitle("Mean rating by valence and membership")
+
+
+# Planned Comparisons of Interaction
+#Simple Effects with 2-Levels
+#Note: These can be reported as F-tests (as basically, we are doing one-way ANOVAs) or as t-values.
+library(emmeans)
+#???Contrasts 1:by membership
+Simple.Effects.By.membership<-emmeans(Interaction_GT, ~valence|membership)
+Simple.Effects.By.membership
+pairs(Simple.Effects.By.membership,adjust='none')
+
+Set1 <- list(H1 = c(-1,1))
+Contrast1_GT <- contrast(Simple.Effects.By.membership,Set1,adjust='none')
+test(pairs(Simple.Effects.By.membership), joint = TRUE)
+sum_Contrast1_GT<-summary(Contrast1_GT)
+
+
+#???Contrast 2:by valence
+Simple.Effects.By.valence<-emmeans(Interaction_GT, ~membership|valence)
+Simple.Effects.By.valence
+pairs(Simple.Effects.By.valence,adjust='none')
+
+Set2 <- list(H1 = c(-1,1))
+Contrast2_GT <- contrast(Simple.Effects.By.valence,Set2,adjust='none')
+test(pairs(Simple.Effects.By.valence), joint = TRUE)
+sum_Contrast2_GT<-summary(Contrast2_GT)
+
+##3 way
+Interaction_GT3_C <- aov(value~consistency*valence*membership,data=my_data_gender_T)
+sum_Interaction_GT3_C<-summary(Interaction_GT3_C)
+
+Interaction_GT3_P <- aov(value~Format*valence*membership,data=my_data_gender_T)
+sum_Interaction_GT3_P<-summary(Interaction_GT3_P)
+
+##faxian
+GT.sub_Con_1 <- subset(my_data_gender_T, Consistency == 1)
+GT.sub_Con_2 <- subset(my_data_gender_T, Consistency == 2)
+Interaction_GT3_Con_1 <- aov(value~valence*membership,data=GT.sub_Con_1)
+summary(Interaction_GT3_Con_1)
+Interaction_GT3_Con_2 <- aov(value~valence*membership,data=GT.sub_Con_2)
+summary(Interaction_GT3_Con_2)
+
+GT.sub_For_1 <- subset(my_data_gender_T, Format == 1)
+GT.sub_For_2 <- subset(my_data_gender_T, Format == 2)
+Interaction_GT3_For_1 <- aov(value~valence*membership,data=GT.sub_For_1)
+summary(Interaction_GT3_For_1)
+Interaction_GT3_For_2 <- aov(value~valence*membership,data=GT.sub_For_2)
+summary(Interaction_GT3_For_2)
+
+#visualize
+ggplot(data = my_data_gender_T, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Consistency) +
+  geom_jitter() + 
+  geom_smooth(aes(group=membership))
+ggplot(data = my_data_gender_T, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Format) +
+  geom_jitter() + 
+  geom_smooth(aes(group=membership))
+```
+
+```{r, fig.width=6, fig.height=4, fig.cap="Interaction effect of valence and membership on the truth of gender-related claims."}
+interaction.plot(x.factor = my_data_gender_T$valence, trace.factor = my_data_gender_T$membership, 
+                 response = my_data_gender_T$value, fun = mean, 
+                 trace.label = "Membership",
+                 ylim = c(3,5),
+                 legend = TRUE, 
+                 xlab = "Valence", ylab="Rating",
+                 pch=c(1,19), col = c("#00AFBB", "#E7B800"))
+```
+
+
+```{r Acceptability_gender, include = FALSE, result="axis"}
+# Extract columns
+my_data_extracted_G_A <- subset(my_data_original, select = c("ID", "gender","Consistency","Format",
+                                                         "AccMenPos", "AccWomenPos", "AccMenNeg", "AccWomenNeg"))
+summary(my_data_extracted_G_A)
+
+# Stack columns
+library(reshape2)
+my_data_gender_A <- melt(my_data_extracted_G_A, id.vars=1:4)
+my_data_gender_A
+
+# Define factors
+str(my_data_gender_A)
+#gender
+gender<- as.factor(my_data_gender_A$gender)
+gender<- factor(gender,c(1,2),labels = c("Man","Woman"))
+consistency<- as.factor(my_data_gender_A$Consistency)
+
+#membership
+my_data_gender_A$membership <- ifelse(my_data_gender_A$gender==1 & my_data_gender_A$variable=="AccMenPos", "1","0")
+my_data_gender_A$membership[my_data_gender_A$gender==1 & my_data_gender_A$variable=="AccMenNeg"] <- 1
+my_data_gender_A$membership[my_data_gender_A$gender==2 & my_data_gender_A$variable=="AccWomenPos"] <- 1
+my_data_gender_A$membership[my_data_gender_A$gender==2 & my_data_gender_A$variable=="AccWomenNeg"] <- 1
+my_data_gender_A$membership<- factor(my_data_gender_A$membership,c(1,0),labels = c("Ingroup","Outgroup"))
+#valence
+my_data_gender_A$valence <- ifelse(my_data_gender_A$variable=="AccMenPos", "1","0")
+my_data_gender_A$valence[my_data_gender_A$variable=="AccWomenPos"] <- 1
+my_data_gender_A$valence<- factor(my_data_gender_A$valence,c(1,0),labels = c("Positive","Negative"))
+summary(my_data_gender_A)
+# Get descriptives
+library(psych) 
+Descriptives_GA_TTEST<-describeBy(my_data_gender_A, 
+           group = my_data_gender_A$valence)
+
+# Acceptability_gender
+#Main effect of valence, prediction: positive > negative 
+#Independent 2-group t-test
+Ttest_GA<- lm(my_data_gender_A$value~my_data_gender_A$valence, alternative = "two.sided")
+sum_Ttest_GA<- summary(Ttest_GA)
+
+#visualize
+boxplot(my_data_gender_A$value~my_data_gender_A$valence, 
+        names=c("Truth_Pos","Truth_Neg"), 
+        main="Main effect of valence on gender-related claims", 
+        ylab="Truth rating", xlab="Valence",col=(c("gold","lightblue")))
+#Cohen¡¯s d for two-sample t-test
+library(lsr)
+cohensD(value~valence,
+        data = my_data_gender_A)
+
+# Acceptability: Group membership x Valence Interaction 
+Interaction_GA  <- aov(value ~ valence*membership,data=my_data_gender_A)
+sum_Interaction_GA <- summary(Interaction_GA)
+##table(my_data_gender_T$valence, my_data_gender_T$membership)
+
+# Effect size
+library(sjstats)
+library(car)
+omega_sq(Interaction_GA)
+##Field (2013) suggests the following interpretation heuristics:
+##Omega Squared = 0 - 0.01: Very small
+##Omega Squared = 0.01 - 0.06: Small
+##Omega Squared = 0.06 - 0.14: Medium
+##Omega Squared > 0.14: Large
+
+#???Contrat:by valence
+Simple.Effects.By.valence<-emmeans(Interaction_GA, ~membership|valence)
+Simple.Effects.By.valence
+pairs(Simple.Effects.By.valence,adjust='none')
+
+Set1 <- list(H1 = c(-1,1))
+Contrast1_GA <- contrast(Simple.Effects.By.valence,Set1,adjust='none')
+test(pairs(Simple.Effects.By.valence), joint = TRUE)
+sum_Contrast1_GA<-summary(Contrast1_GA)
+
+
+# Post-hoc test
+#install.packages("lsmeans")
+#install.packages("multcompView")
+library("lsmeans")
+library("multcompView")
+posthoc<-lsmeans(Interaction_GA,
+                 pairwise~valence * membership,
+                 adjust="tukey")
+posthoc
+#visualize
+plot(posthoc)
+
+##3 way
+Interaction_GA3 <- lm(value~consistency*valence*membership,data=my_data_gender_A)
+summary(Interaction_GA3)
+#visualize
+ggplot(data = my_data_gender_A, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Consistency) +
+  geom_jitter() + 
+  geom_smooth(aes(group=membership))
+
+##faxian
+GA.sub_Con_1 <- subset(my_data_gender_A, Consistency == 1)
+GA.sub_Con_2 <- subset(my_data_gender_A, Consistency == 2)
+Interaction_GA3_Con_1 <- aov(value~valence*membership,data=GA.sub_Con_1)
+summary(Interaction_GA3_Con_1)
+Interaction_GA3_Con_2 <- aov(value~valence*membership,data=GA.sub_Con_2)
+summary(Interaction_GA3_Con_2)
+
+GA.sub_For_1 <- subset(my_data_gender_A, Format == 1)
+GA.sub_For_2 <- subset(my_data_gender_A, Format == 2)
+Interaction_GA3_For_1 <- aov(value~valence*membership,data=GA.sub_For_1)
+summary(Interaction_GA3_For_1)
+Interaction_GA3_For_2 <- aov(value~valence*membership,data=GA.sub_For_2)
+summary(Interaction_GA3_For_2)
+```
+
+```{r,  fig.width=6, fig.height=4, fig.cap="Interaction effect of valence and membership on the acceptability of gender-related claims."}
+interaction.plot(x.factor = my_data_gender_A$valence, trace.factor = my_data_gender_A$membership, 
+                 response = my_data_gender_A$value, fun = mean, 
+                 trace.label = "Membership",
+                 ylim = c(3,5),
+                 legend = TRUE, 
+                 xlab = "Valence", ylab="Rating",
+                 pch=c(1,19), col = c("#00AFBB", "#E7B800"))   
+```
+
+```{r Truth_age, include = FALSE, result="axis"}
+# Extract columns
+table(my_data_original$agegroup_subj)
+table(my_data_original$agegroup_obj)
+##no wrong identification
+table(my_data_original$agegroup_subj==1 & my_data_original$agegroup_obj==3)
+table(my_data_original$agegroup_subj==3 & my_data_original$agegroup_obj==1)
+
+middle_subj=95/(59+95+29)  #[1] 0.5191257
+middle_obj=78/(78+61+44)  #[1] 0.4262295
+#25% or more of one or both age groups: so including them but distinguish between 3 rather than 2 age groups (younger, middle-aged, older)
+
+my_data_extracted_A_T <- subset(my_data_original, select = c("ID", "agegroup_subj",  "Consistency", 
+                                                            "Format", "TruthOldPos", "TruthYoungPos", "TruthOldNeg", "TruthYoungNeg"))
+summary(my_data_extracted_A_T)
+
+# Stack columns
+library(reshape2)
+my_data_age_T <- melt(my_data_extracted_A_T, id.vars=1:4)
+my_data_age_T
+
+# Define factors
+str(my_data_age_T)
+#Age
+age<- as.factor(my_data_age_T$agegroup_subj)
+age<- factor(age,c(1,2,3),labels = c("Young","Middle","Old"))
+consistency<- as.factor(my_data_age_T$Consistency)
+
+#membership
+##ingroup
+my_data_age_T$membership <- ifelse(my_data_age_T$agegroup_subj==1 & my_data_age_T$variable=="TruthYoungPos", "1","2")
+my_data_age_T$membership[my_data_age_T$agegroup_subj==1 & my_data_age_T$variable=="TruthYoungNeg"] <- 1
+my_data_age_T$membership[my_data_age_T$agegroup_subj==3 & my_data_age_T$variable=="TruthOldPos"] <- 1
+my_data_age_T$membership[my_data_age_T$agegroup_subj==3 & my_data_age_T$variable=="TruthOldNeg"] <- 1
+##outgroup
+my_data_age_T$membership[my_data_age_T$agegroup_subj==1 & my_data_age_T$variable=="TruthOldPos"] <- 0
+my_data_age_T$membership[my_data_age_T$agegroup_subj==1 & my_data_age_T$variable=="TruthOldNeg"] <- 0
+my_data_age_T$membership[my_data_age_T$agegroup_subj==3 & my_data_age_T$variable=="TruthYoungPos"] <- 0
+my_data_age_T$membership[my_data_age_T$agegroup_subj==3 & my_data_age_T$variable=="TruthYoungNeg"] <- 0
+
+my_data_age_T$membership<- factor(my_data_age_T$membership,c(1,0,2),labels = c("Ingroup","Outgroup","Middlegroup"))
+#valence
+my_data_age_T$valence <- ifelse(my_data_age_T$variable=="TruthOldPos", "1","0")
+my_data_age_T$valence[my_data_age_T$variable=="TruthYoungPos"] <- 1
+my_data_age_T$valence<- factor(my_data_age_T$valence,c(1,0),labels = c("Positive","Negative"))
+summary(my_data_age_T)
+
+# Get descriptives
+library(psych) 
+Descriptives_AT_TTEST<-describeBy(my_data_age_T, 
+           group = my_data_age_T$valence)
+
+# Truth
+#Main effect of valence, prediction: positive > negative 
+#Independent 2-group t-test
+Ttest_AT<- lm(my_data_age_T$value~my_data_age_T$valence, alternative = "two.sided")
+sum_Ttest_AT<- summary(Ttest_AT)
+
+#visualize
+boxplot(my_data_age_T$value~my_data_age_T$valence, 
+        names=c("Truth_Pos","Truth_Neg"), 
+        main="Main effect of valence on age-related claims", 
+        ylab="Truth rating", xlab="Valence",col=(c("gold","lightblue")))
+#Cohen¡¯s d for two-sample t-test
+library(lsr)
+cohensD(value~valence,
+        data = my_data_age_T)
+
+# Truth: Group membership x Valence Interaction 
+Interaction_AT  <- aov(value ~ valence*membership,data=my_data_age_T)
+sum_Interaction_AT <- summary(Interaction_AT)
+##table(my_data_gender_T$valence, my_data_gender_T$membership)
+
+
+# Effect size
+#install.packages("purrr")
+library(purrr)
+library(sjstats)
+library(car)
+omega_sq(Interaction_AT)
+##Field (2013) suggests the following interpretation heuristics:
+##Omega Squared = 0 - 0.01: Very small
+##Omega Squared = 0.01 - 0.06: Small
+##Omega Squared = 0.06 - 0.14: Medium
+##Omega Squared > 0.14: Large
+
+#visualize
+library(dplyr)
+groups <- group_by(my_data_age_T,membership,valence)
+plot.data <- summarise(groups,
+                       mean = mean(value, na.rm=TRUE),
+                       sd = sd(value, na.rm=TRUE),
+                       n = n(),
+                       se=sd/sqrt(n),
+                       ci = qt(0.975,df=n-1)*se)
+library(ggplot2)
+ggplot(plot.data, aes(x=membership, y=mean, fill =valence)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  ylim(0,7)+
+  geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.2, position=position_dodge(.9)) +
+  ggtitle("Mean rating by valence and membership")
+
+# Planned Comparisons of Interaction
+#Simple Effects with 2-Levels
+#Note: These can be reported as F-tests (as basically, we are doing one-way ANOVAs) or as t-values.
+library(emmeans)
+#???Contrasts 1:by membership
+Simple.Effects.By.membership<-emmeans(Interaction_AT, ~valence|membership)
+Simple.Effects.By.membership
+pairs(Simple.Effects.By.membership,adjust='none')
+
+Set1 <- list(H1 = c(-1,1))
+Contrast1_AT <- contrast(Simple.Effects.By.membership,Set1,adjust='none')
+test(pairs(Simple.Effects.By.membership), joint = TRUE)
+sum_Contrast1_AT<-summary(Contrast1_AT)
+
+#???Contrast 2:by valence
+emcontcat  <- emmeans(Interaction_AT, ~ valence*membership,data=my_data_age_T)
+Contrast2_AT<-contrast(emcontcat, "pairwise",by="valence")
+sum_Contrast2_AT<-summary(Contrast2_AT)
+
+# Post-hoc test
+#install.packages("lsmeans")
+#install.packages("multcompView")
+library("lsmeans")
+library("multcompView")
+posthoc<-lsmeans(Interaction_AT,
+                 pairwise~valence * membership,
+                 adjust="tukey")
+posthoc
+#visualize
+plot(posthoc)
+
+##3 way
+Interaction_AT3 <- lm(value~consistency*valence*membership,data=my_data_age_T)
+summary(Interaction_AT3)
+
+##faxain
+AT.sub_Con_1 <- subset(my_data_age_T, Consistency == 1)
+AT.sub_Con_2 <- subset(my_data_age_T, Consistency == 2)
+Interaction_AT3_Con_1 <- aov(value~valence*membership,data=AT.sub_Con_1)
+summary(Interaction_AT3_Con_1)
+Interaction_AT3_Con_2 <- aov(value~valence*membership,data=AT.sub_Con_2)
+summary(Interaction_AT3_Con_2)
+
+AT.sub_For_1 <- subset(my_data_age_T, Format == 1)
+AT.sub_For_2 <- subset(my_data_age_T, Format == 2)
+Interaction_AT3_For_1 <- aov(value~valence*membership,data=AT.sub_For_1)
+summary(Interaction_AT3_For_1)
+Interaction_AT3_For_2 <- aov(value~valence*membership,data=AT.sub_For_2)
+summary(Interaction_AT3_For_2)
+
+#visualize
+ggplot(data = my_data_age_T, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Consistency) +
+  geom_jitter() + 
+  geom_smooth(aes(group=membership))
+
+```
+
+```{r,  fig.width=6, fig.height=4, fig.cap="Interaction effect of valence and membership on the truth of age-related claims."}
+interaction.plot(x.factor = my_data_age_T$membership, trace.factor = my_data_age_T$valence,
+                 trace.lab = "Valence",
+                 response = my_data_age_T$value, fun = mean, 
+                 ylim = c(3,5),
+                 legend = TRUE, 
+                 xlab = "Membership", ylab="Rating",
+                 pch=c(1,19), col = c("#00AFBB", "#E7B800"))   
+```
+
+```{r Acceptability_age, include = FALSE, result="axis"}
+# Extract columns
+my_data_extracted_A_A <- subset(my_data_original, select = c("ID", "agegroup_subj","Consistency","Format",
+                                                           "AcceptYoungPos", "AcceptOldPos", "AcceptYoungNeg", "AcceptOldNeg"))
+summary(my_data_extracted_A_A)
+
+# Stack columns
+library(reshape2)
+my_data_age_A <- melt(my_data_extracted_A_A, id.vars=1:4)
+my_data_age_A
+
+# Define factors
+str(my_data_age_A)
+
+#Age
+age<- as.factor(my_data_age_A$agegroup_subj)
+age<- factor(age,c(1,2,3),labels = c("Young","Middle","Old"))
+consistency<- as.factor(my_data_age_A$Consistency)
+
+#membership
+##ingroup
+my_data_age_A$membership <- ifelse(my_data_age_A$agegroup_subj==1 & my_data_age_A$variable=="AcceptYoungPos", "1","2")
+my_data_age_A$membership[my_data_age_A$agegroup_subj==1 & my_data_age_A$variable=="AcceptYoungNeg"] <- 1
+my_data_age_A$membership[my_data_age_A$agegroup_subj==3 & my_data_age_A$variable=="AcceptOldPos"] <- 1
+my_data_age_A$membership[my_data_age_A$agegroup_subj==3 & my_data_age_A$variable=="AcceptOldNeg"] <- 1
+##outgroup
+my_data_age_A$membership[my_data_age_A$agegroup_subj==1 & my_data_age_A$variable=="AcceptOldPos"] <- 0
+my_data_age_A$membership[my_data_age_A$agegroup_subj==1 & my_data_age_A$variable=="AcceptOldNeg"] <- 0
+my_data_age_A$membership[my_data_age_A$agegroup_subj==3 & my_data_age_A$variable=="AcceptYoungPos"] <- 0
+my_data_age_A$membership[my_data_age_A$agegroup_subj==3 & my_data_age_A$variable=="AcceptYoungNeg"] <- 0
+
+my_data_age_A$membership<- factor(my_data_age_A$membership,c(1,0,2),labels = c("Ingroup","Outgroup","Middlegroup"))
+#valence
+my_data_age_A$valence <- ifelse(my_data_age_A$variable=="AcceptOldPos", "1","0")
+my_data_age_A$valence[my_data_age_A$variable=="AcceptYoungPos"] <- 1
+my_data_age_A$valence<- factor(my_data_age_A$valence,c(1,0),labels = c("Positive","Negative"))
+summary(my_data_age_A)
+# Get descriptives
+library(psych) 
+Descriptives_AA_TTEST<-describeBy(my_data_age_A, 
+           group = my_data_age_A$valence)
+
+#Main effect of valence, prediction: positive > negative 
+#Independent 2-group t-test
+Ttest_AA<- lm(my_data_age_A$value~my_data_age_A$valence, alternative = "two.sided")
+sum_Ttest_AA<- summary(Ttest_AA)
+
+#visualize
+boxplot(my_data_age_A$value~my_data_age_A$valence, 
+        names=c("Truth_Pos","Truth_Neg"), 
+        main="Main effect of valence on gender-related claims", 
+        ylab="Truth rating", xlab="Valence",col=(c("gold","lightblue")))
+#Cohen¡¯s d for two-sample t-test
+library(lsr)
+cohensD(value~valence,
+        data = my_data_age_A)
+
+# Acc: Group membership x Valence Interaction 
+Interaction_AA  <- aov(value ~ valence*membership,data=my_data_age_A)
+sum_Interaction_AA <- summary(Interaction_AA)
+##table(my_data_gender_T$valence, my_data_gender_T$membership)
+
+#visualize
+interaction.plot(x.factor = my_data_age_A$membership, trace.factor = my_data_age_A$valence,
+                 response = my_data_age_A$value, fun = mean, 
+                 ylim = c(3,5),
+                 legend = TRUE, 
+                 xlab = "Membership", ylab="Rating",
+                 pch=c(1,19), col = c("#00AFBB", "#E7B800"))   
+# Effect size
+library(sjstats)
+library(car)
+omega_sq(Interaction_AA)
+##Field (2013) suggests the following interpretation heuristics:
+##Omega Squared = 0 - 0.01: Very small
+##Omega Squared = 0.01 - 0.06: Small
+##Omega Squared = 0.06 - 0.14: Medium
+##Omega Squared > 0.14: Large
+
+#visualize
+library(dplyr)
+groups <- group_by(my_data_age_A,membership,valence)
+plot.data <- summarise(groups,
+                       mean = mean(value, na.rm=TRUE),
+                       sd = sd(value, na.rm=TRUE),
+                       n = n(),
+                       se=sd/sqrt(n),
+                       ci = qt(0.975,df=n-1)*se)
+library(ggplot2)
+ggplot(plot.data, aes(x=membership, y=mean, fill =valence)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  ylim(0,7)+
+  geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.2, position=position_dodge(.9)) +
+  ggtitle("Mean rating by valence and membership")
+
+
+# Planned Comparisons of Interaction
+#Simple Effects with 2-Levels
+#Note: These can be reported as F-tests (as basically, we are doing one-way ANOVAs) or as t-values.
+library(emmeans)
+#???Contrasts 1:by membership
+Simple.Effects.By.membership<-emmeans(Interaction_AA, ~valence|membership)
+Simple.Effects.By.membership
+pairs(Simple.Effects.By.membership,adjust='none')
+
+
+Set1 <- list(H1 = c(-1,1))
+contrast(Simple.Effects.By.membership,Set1,adjust='none')
+test(pairs(Simple.Effects.By.membership), joint = TRUE)
+###membership = Middlegroup, not significant
+
+#???Contrast 2:by valence
+emcontcat  <- emmeans(Interaction_AA, ~ valence*membership,data=my_data_age_A)
+Contrast1_AA<-contrast(emcontcat, "pairwise",by="valence")
+sum_Contrast1_AA<-summary(Contrast1_AA)
+
+# Post-hoc test
+#install.packages("lsmeans")
+#install.packages("multcompView")
+library("lsmeans")
+library("multcompView")
+posthoc<-lsmeans(Interaction_AA,
+                 pairwise~valence * membership,
+                 adjust="tukey")
+posthoc
+#visualize
+plot(posthoc)
+
+##3 way
+Interaction1_AA3 <- lm(value~consistency*valence*membership,data=my_data_age_A)
+summary(Interaction1_AA3)
+#visualize
+ggplot(data = my_data_age_A, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Consistency) +
+  geom_jitter() + 
+  geom_smooth(aes(group=membership))
+
+###faxian
+AA.sub_Con_1 <- subset(my_data_age_A, Consistency == 1)
+AA.sub_Con_2 <- subset(my_data_age_A, Consistency == 2)
+Interaction_AA3_Con_1 <- aov(value~valence*membership,data=AA.sub_Con_1)
+summary(Interaction_AA3_Con_1)
+Interaction_AA3_Con_2 <- aov(value~valence*membership,data=AA.sub_Con_2)
+summary(Interaction_AA3_Con_2)
+
+AA.sub_For_1 <- subset(my_data_age_A, Format == 1)
+AA.sub_For_2 <- subset(my_data_age_A, Format == 2)
+Interaction_AA3_For_1 <- aov(value~valence*membership,data=AA.sub_For_1)
+summary(Interaction_AA3_For_1)
+Interaction_AA3_For_2 <- aov(value~valence*membership,data=AA.sub_For_2)
+summary(Interaction_AA3_For_2)
+```
+
+```{r,  fig.width=6, fig.height=4, fig.cap="Interaction effect of valence and membership on the acceptability of age-related claims."}
+interaction.plot(x.factor = my_data_age_A$valence, trace.factor = my_data_age_A$membership, 
+                 response = my_data_age_A$value, fun = mean, 
+                 trace.label = "Membership",
+                 ylim = c(3,5),
+                 legend = TRUE, 
+                 xlab = "Valence", ylab="Rating",
+                 pch=c(1,19), col = c("#00AFBB", "#E7B800"))
+```
+
+```{r Positivity_gender, include = FALSE, result="axis"}
+#Posi_gender
+# Extract columns
+my_data_extracted_G_P <- subset(my_data_original, select = c("ID", "gender", "Consistency","Format",
+                                                             "PosiMenPos", "PosiWomenPos", "PosiMenNeg", "PosiWomenNeg"))
+summary(my_data_extracted_G_P)
+
+# Stack columns
+library(reshape2)
+my_data_gender_P <- melt(my_data_extracted_G_P, id.vars=1:4)
+my_data_gender_P
+
+# Define factors
+str(my_data_gender_P)
+#gender
+gender<- as.factor(my_data_gender_P$gender)
+gender<- factor(gender,c(1,2),labels = c("Man","Woman"))
+consistency<- as.factor(my_data_gender_P$Consistency)
+
+#membership
+my_data_gender_P$membership <- ifelse(my_data_gender_P$gender==1 & my_data_gender_P$variable=="PosiMenPos", "1","0")
+my_data_gender_P$membership[my_data_gender_P$gender==1 & my_data_gender_P$variable=="PosiMenNeg"] <- 1
+my_data_gender_P$membership[my_data_gender_P$gender==2 & my_data_gender_P$variable=="PosiWomenPos"] <- 1
+my_data_gender_P$membership[my_data_gender_P$gender==2 & my_data_gender_P$variable=="PosiWomenNeg"] <- 1
+my_data_gender_P$membership<- factor(my_data_gender_P$membership,c(1,0),labels = c("Ingroup","Outgroup"))
+#valence
+my_data_gender_P$valence <- ifelse(my_data_gender_P$variable=="PosiMenPos", "1","0")
+my_data_gender_P$valence[my_data_gender_P$variable=="PosiWomenPos"] <- 1
+my_data_gender_P$valence<- factor(my_data_gender_P$valence,c(1,0),labels = c("Positive","Negative"))
+summary(my_data_gender_P)
+
+# Get descriptives
+library(psych) 
+Descriptives_GP_TTEST<-describeBy(my_data_gender_P, 
+           group = my_data_gender_P$membership)
+
+# Fam
+#Main effect of valence, prediction: positive > negative 
+#Independent 2-group t-test
+Ttest_GP<- lm(my_data_gender_P$value~my_data_gender_P$membership)
+sum_Ttest_GP<-summary(Ttest_GP)
+
+#visualize
+boxplot(my_data_gender_P$value~my_data_gender_P$membership, 
+        names=c("Posi_Pos","Posi_Neg"), 
+        main="Main effect of membership on gender-related claims", 
+        ylab="Posi rating", xlab="Membership",col=(c("gold","lightblue")))
+#Cohen¡¯s d for two-sample t-test
+library(lsr)
+cohensD(value~membership,
+        data = my_data_gender_P)
+
+# Posi: Group membership x Valence Interaction 
+Interaction_GP <- aov(value~valence*membership,data=my_data_gender_P)
+sum_Interaction_GP<- summary(Interaction_GP)
+#visualize
+interaction.plot(x.factor = my_data_gender_P$valence, trace.factor = my_data_gender_P$membership, 
+                 response = my_data_gender_P$value, fun = mean, 
+                 trace.label = "Valence",
+                 ylim = c(3,5),
+                 legend = TRUE, 
+                 xlab = "Valence", ylab="Rating",
+                 pch=c(1,19), col = c("#00AFBB", "#E7B800"))   
+# Effect size
+library(sjstats)
+library(car)
+omega_sq(Interaction_GP)
+##Field (2013) suggests the following interpretation heuristics:
+##Omega Squared = 0 - 0.01: Very small
+##Omega Squared = 0.01 - 0.06: Small
+##Omega Squared = 0.06 - 0.14: Medium
+##Omega Squared > 0.14: Large
+
+#visualize
+library(dplyr)
+groups <- group_by(my_data_gender_P, valence, membership)
+plot.data <- summarise(groups,
+                       mean = mean(value, na.rm=TRUE),
+                       sd = sd(value, na.rm=TRUE),
+                       n = n(),
+                       se=sd/sqrt(n),
+                       ci = qt(0.975,df=n-1)*se)
+library(ggplot2)
+ggplot(plot.data, aes(x=valence, y=mean, fill = membership)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  ylim(0,7)+
+  geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.2, position=position_dodge(.9)) +
+  ggtitle("Mean rating by valence and membership")
+
+
+# Planned Comparisons of Interaction
+#Simple Effects with 2-Levels
+#Note: These can be reported as F-tests (as basically, we are doing one-way ANOVAs) or as t-values.
+library(emmeans)
+#???Contrasts 1:by membership
+Simple.Effects.By.membership<-emmeans(Interaction_GP, ~valence|membership)
+Simple.Effects.By.membership
+Contrast1_GP<-pairs(Simple.Effects.By.membership,adjust='none')
+sum_Contrast1_GP<-summary(Contrast1_GP)
+
+Set1 <- list(H1 = c(-1,1))
+contrast(Simple.Effects.By.membership,Set1,adjust='none')
+test(pairs(Simple.Effects.By.membership), joint = TRUE)
+
+#???Contrast 2:by valence
+Simple.Effects.By.valence<-emmeans(Interaction_GP, ~membership|valence)
+Simple.Effects.By.valence
+Contrast2_GP<-pairs(Simple.Effects.By.valence,adjust='none')
+sum_Contrast2_GP<-summary(Contrast2_GP)
+
+Set1 <- list(H1 = c(-1,1))
+contrast(Simple.Effects.By.valence,Set1,adjust='none')
+test(pairs(Simple.Effects.By.valence), joint = TRUE)
+
+
+# Post-hoc test
+#install.packages("lsmeans")
+#install.packages("multcompView")
+library("lsmeans")
+library("multcompView")
+posthoc<-lsmeans(Interaction_GP,
+                 pairwise~valence * membership,
+                 adjust="tukey")
+posthoc
+#visualize
+plot(posthoc)
+
+##3 way
+Interaction_GP3_C <- aov(value~consistency*valence*membership,data=my_data_gender_P)
+sum_Interaction_GP3_C<-summary(Interaction_GP3_C)
+
+Interaction_GP3_F <- aov(value~Format*valence*membership,data=my_data_gender_P)
+sum_Interaction_GP3_F<-summary(Interaction_GP3_F)
+
+#visualize
+ggplot(data = my_data_gender_P, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Consistency) +
+  geom_jitter() + 
+  geom_smooth(aes(group=membership))
+
+###faxian
+GP.sub_Con_1 <- subset(my_data_gender_P, Consistency == 1)
+GP.sub_Con_2 <- subset(my_data_gender_P, Consistency == 2)
+Interaction_GP3_Con_1 <- aov(value~valence*membership,data=GP.sub_Con_1)
+summary(Interaction_GP3_Con_1)
+Interaction_GP3_Con_2 <- aov(value~valence*membership,data=GP.sub_Con_2)
+summary(Interaction_GP3_Con_2)
+
+GP.sub_For_1 <- subset(my_data_gender_P, Format == 1)
+GP.sub_For_2 <- subset(my_data_gender_P, Format == 2)
+Interaction_GP3_For_1 <- aov(value~valence*membership,data=GP.sub_For_1)
+summary(Interaction_GP3_For_1)
+Interaction_GP3_For_2 <- aov(value~valence*membership,data=GP.sub_For_2)
+summary(Interaction_GP3_For_2)
+```
+
+```{r Positivity_age, include = FALSE, result="axis"}
+# Extract columns
+my_data_extracted_A_P <- subset(my_data_original, select = c("ID", "agegroup_subj", "Consistency","Format",
+                                                             "PosiYoungPos", "PosiOldPos", "PosiYoungNeg", "PosiOldNeg"))
+summary(my_data_extracted_A_P)
+
+# Stack columns
+library(reshape2)
+my_data_age_P <- melt(my_data_extracted_A_P, id.vars=1:4)
+my_data_age_P
+
+# Define factors
+str(my_data_age_P)
+
+#Age
+age<- as.factor(my_data_age_P$agegroup_subj)
+age<- factor(age,c(1,2,3),labels = c("Young","Middle","Old"))
+#membership
+##ingroup
+my_data_age_P$membership <- ifelse(my_data_age_P$agegroup_subj==1 & my_data_age_P$variable=="PosiYoungPos", "1","2")
+my_data_age_P$membership[my_data_age_P$agegroup_subj==1 & my_data_age_P$variable=="PosiYoungNeg"] <- 1
+my_data_age_P$membership[my_data_age_P$agegroup_subj==3 & my_data_age_P$variable=="PosiOldPos"] <- 1
+my_data_age_P$membership[my_data_age_P$agegroup_subj==3 & my_data_age_P$variable=="PosiOldNeg"] <- 1
+##outgroup
+my_data_age_P$membership[my_data_age_P$agegroup_subj==1 & my_data_age_P$variable=="PosiOldPos"] <- 0
+my_data_age_P$membership[my_data_age_P$agegroup_subj==1 & my_data_age_P$variable=="PosiOldNeg"] <- 0
+my_data_age_P$membership[my_data_age_P$agegroup_subj==3 & my_data_age_P$variable=="PosiYoungPos"] <- 0
+my_data_age_P$membership[my_data_age_P$agegroup_subj==3 & my_data_age_P$variable=="PosiYoungNeg"] <- 0
+
+my_data_age_P$membership<- factor(my_data_age_P$membership,c(1,0,2),labels = c("Ingroup","Outgroup","Middlegroup"))
+#valence
+my_data_age_P$valence <- ifelse(my_data_age_P$variable=="PosiOldPos", "1","0")
+my_data_age_P$valence[my_data_age_P$variable=="PosiYoungPos"] <- 1
+my_data_age_P$valence<- factor(my_data_age_P$valence,c(1,0),labels = c("Positive","Negative"))
+summary(my_data_age_P)
+
+# Get descriptives
+library(psych) 
+Descriptives_AP_TTEST<-describeBy(my_data_age_P, 
+           group = my_data_age_P$membership)
+
+# Fam
+#Main effect of valence, prediction: positive > negative 
+#Independent 2-group t-test
+Ttest_AP<- aov(my_data_age_P$value~my_data_age_P$membership)
+sum_Ttest_AP<-summary(Ttest_AP)
+
+#visualize
+boxplot(my_data_age_P$value~my_data_age_P$valence, 
+        names=c("Posi_Pos","Posi_Neg"), 
+        main="Main effect of valence on gender-related claims", 
+        ylab="Posi rating", xlab="Valence",col=(c("gold","lightblue")))
+
+#Cohen¡¯s d for two-sample t-test
+library(lsr)
+cohensD(value~valence,
+        data = my_data_age_P)
+
+# Posi: Group membership x Valence Interaction 
+Interaction_AP <- aov(value~membership*valence,data=my_data_age_P)
+sum_Interaction_AP<-summary(Interaction_AP)
+
+#visualize
+interaction.plot(x.factor = my_data_age_P$membership, trace.factor = my_data_age_P$valence,
+                 response = my_data_age_P$value, fun = mean, 
+                 ylim = c(3,5),
+                 legend = TRUE, 
+                 xlab = "Membership", ylab="Rating",
+                 pch=c(1,19), col = c("#00AFBB", "#E7B800"))   
+# Effect size
+library(sjstats)
+library(car)
+omega_sq(Interaction_AP)
+##Field (2013) suggests the following interpretation heuristics:
+##Omega Squared = 0 - 0.01: Very small
+##Omega Squared = 0.01 - 0.06: Small
+##Omega Squared = 0.06 - 0.14: Medium
+##Omega Squared > 0.14: Large
+
+#visualize
+library(dplyr)
+groups <- group_by(my_data_age_P,membership,valence)
+plot.data <- summarise(groups,
+                       mean = mean(value, na.rm=TRUE),
+                       sd = sd(value, na.rm=TRUE),
+                       n = n(),
+                       se=sd/sqrt(n),
+                       ci = qt(0.975,df=n-1)*se)
+library(ggplot2)
+ggplot(plot.data, aes(x=membership, y=mean, fill =valence)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  ylim(0,7)+
+  geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.2, position=position_dodge(.9)) +
+  ggtitle("Mean rating by valence and membership")
+
+
+# Planned Comparisons of Interaction
+#Simple Effects with 2-Levels
+#Note: These can be reported as F-tests (as basically, we are doing one-way ANOVAs) or as t-values.
+library(emmeans)
+#???Contrasts 1:by membership
+Simple.Effects.By.membership<-emmeans(Interaction_AP, ~valence|membership)
+Simple.Effects.By.membership
+pairs(Simple.Effects.By.membership,adjust='none')
+
+Set1 <- list(H1 = c(-1,1))
+contrast(Simple.Effects.By.membership,Set1,adjust='none')
+test(pairs(Simple.Effects.By.membership), joint = TRUE)
+###membership = Middlegroup, not significant
+
+#???Contrast 2:by valence
+#???Contrast 2:by valence
+emcontcat  <- emmeans(Interaction_AP, ~ valence*membership,data=my_data_age_P)
+Contrast2_AP<-contrast(emcontcat, "pairwise",by="valence")
+sum_Contrast2_AP<-summary(Contrast2_AP)
+
+
+# Post-hoc test
+#install.packages("lsmeans")
+#install.packages("multcompView")
+library("lsmeans")
+library("multcompView")
+posthoc<-lsmeans(Interaction_AP,
+                 pairwise~valence * membership,
+                 adjust="tukey")
+posthoc
+#visualize
+plot(posthoc)
+
+##faxian
+AP.sub_Con_1 <- subset(my_data_age_P, Consistency == 1)
+AP.sub_Con_2 <- subset(my_data_age_P, Consistency == 2)
+Interaction_AP3_Con_1 <- aov(value~valence*membership,data=AP.sub_Con_1)
+summary(Interaction_AP3_Con_1)
+Interaction_AP3_Con_2 <- aov(value~valence*membership,data=AP.sub_Con_2)
+summary(Interaction_AP3_Con_2)
+
+AP.sub_For_1 <- subset(my_data_age_P, Format == 1)
+AP.sub_For_2 <- subset(my_data_age_P, Format == 2)
+Interaction_AP3_For_1 <- aov(value~valence*membership,data=AP.sub_For_1)
+summary(Interaction_AP3_For_1)
+Interaction_AP3_For_2 <- aov(value~valence*membership,data=AP.sub_For_2)
+summary(Interaction_AP3_For_2)
+
+
+##3 way
+Interaction_AP3_C <- aov(value~consistency*valence*membership,data=my_data_age_P)
+sum_Interaction_AP3_C<-summary(Interaction_AP3_C)
+
+Interaction_AP3_F <- aov(value~Format*valence*membership,data=my_data_age_P)
+sum_Interaction_AP3_F<-summary(Interaction_AP3_F)
+
+Interaction_FV <- aov(value~Format*valence,data=my_data_age_P)
+sum_Interaction_FV<-summary(Interaction_FV)
+
+emcontcat  <- emmeans(Interaction_FV, ~ Format*valence,data=my_data_age_P)
+Contrast3_AP<-contrast(emcontcat, "pairwise",by="valence")
+sum_Contrast3_AP<-summary(Contrast3_AP)
+
+Contrast4_AP<-contrast(emcontcat, "pairwise",by="Format")
+sum_Contrast4_AP<-summary(Contrast4_AP)
+
+Interaction_AP3_F_VM1 <- aov(value~membership*valence,data=AP.sub_For_1)
+sum_Interaction_AP3_F_VM1<-summary(Interaction_AP3_F_VM1)
+
+Interaction_AP3_F_VM2 <- aov(value~membership*valence,data=AP.sub_For_2)
+sum_Interaction_AP3_F_VM2<-summary(Interaction_AP3_F_VM2)
+
+emcontcat  <- emmeans(Interaction_AP3_F, ~ Format*valence*membership,data=AP.sub_For_2)
+Contrast3_AP<-contrast(emcontcat, "pairwise",by="valence")
+sum_Contrast3_AP<-summary(Contrast3_AP)
+
+emcontcat  <- emmeans(Interaction_AP3_F, ~ Format*valence*membership,data=AP.sub_For_2)
+Contrast4_AP<-contrast(emcontcat, "pairwise",by="membership")
+sum_Contrast4_AP<-summary(Contrast4_AP)
+
+#visualize
+ggplot(data = my_data_age_P, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Consistency) +
+  geom_jitter() + 
+  geom_smooth(aes(group=membership))
+
+ggplot(data = my_data_age_P, mapping = aes(x =valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Format) +
+  geom_jitter() + 
+  geom_smooth(aes(group=membership))
+```
+
+```{r familiarity_gender, include = FALSE, result="axis"}
+# Extract columns
+my_data_extracted_G_F <- subset(my_data_original, select = c("ID", "gender", "Consistency", "Format",
+                                                             "FamMenPos", "FamWomenPos", "FamMenNeg", "FamWomenNeg"))
+summary(my_data_extracted_G_F)
+
+# Stack columns
+library(reshape2)
+my_data_gender_F <- melt(my_data_extracted_G_F, id.vars=1:4)
+my_data_gender_F
+
+# Define factors
+str(my_data_gender_F)
+#gender
+gender<- as.factor(my_data_gender_F$gender)
+gender<- factor(gender,c(1,2),labels = c("Man","Woman"))
+Consistency<- as.factor(my_data_gender_F$Consistency)
+Consistency<- factor(Consistency,c(1,2),labels = c("Stereotypical","Counter-stereotypical"))
+
+#membership
+my_data_gender_F$membership <- ifelse(my_data_gender_F$gender==1 & my_data_gender_F$variable=="FamMenPos", "1","0")
+my_data_gender_F$membership[my_data_gender_F$gender==1 & my_data_gender_F$variable=="FamMenNeg"] <- 1
+my_data_gender_F$membership[my_data_gender_F$gender==2 & my_data_gender_F$variable=="FamWomenPos"] <- 1
+my_data_gender_F$membership[my_data_gender_F$gender==2 & my_data_gender_F$variable=="FamWomenNeg"] <- 1
+my_data_gender_F$membership<- factor(my_data_gender_F$membership,c(1,0),labels = c("Ingroup","Outgroup"))
+#valence
+my_data_gender_F$valence <- ifelse(my_data_gender_F$variable=="FamMenPos", "1","0")
+my_data_gender_F$valence[my_data_gender_F$variable=="FamWomenPos"] <- 1
+my_data_gender_F$valence<- factor(my_data_gender_F$valence,c(1,0),labels = c("Positive","Negative"))
+summary(my_data_gender_F)
+# Get descriptives
+library(psych) 
+Descriptives_GF_TTEST<-describeBy(my_data_gender_F, 
+           group = my_data_gender_F$membership)
+
+# Fam
+#Main effect of valence, prediction: positive > negative 
+#Independent 2-group t-test
+Ttest_GF<- lm(my_data_gender_F$value~my_data_gender_F$membership)
+sum_Ttest_GF<-summary(Ttest_GF)
+
+#visualize
+boxplot(my_data_gender_F$value~my_data_gender_F$membership, 
+        names=c("Fam_Pos","Fam_Neg"), 
+        main="Main effect of membership on gender-related claims", 
+        ylab="Fam rating", xlab="Membership",col=(c("gold","lightblue")))
+#Cohen¡¯s d for two-sample t-test
+library(lsr)
+cohensD(value~membership,
+        data = my_data_gender_F)
+
+# Fam: Group membership x Valence Interaction 
+Interaction_GF <- aov(value~valence*membership,data=my_data_gender_F)
+sum_Interaction_GF<- summary(Interaction_GF)
+
+#visualize
+interaction.plot(x.factor = my_data_gender_F$valence, trace.factor = my_data_gender_F$membership, 
+                 response = my_data_gender_F$value, fun = mean, 
+                 trace.label = "Membership",
+                 ylim = c(3,5),
+                 legend = TRUE, 
+                 xlab = "Valence", ylab="Rating",
+                 pch=c(1,19), col = c("#00AFBB", "#E7B800"))   
+# Effect size
+library(sjstats)
+library(car)
+omega_sq(Interaction_GF)
+##Field (2013) suggests the following interpretation heuristics:
+##Omega Squared = 0 - 0.01: Very small
+##Omega Squared = 0.01 - 0.06: Small
+##Omega Squared = 0.06 - 0.14: Medium
+##Omega Squared > 0.14: Large
+
+#visualize
+library(dplyr)
+groups <- group_by(my_data_gender_F, valence, membership)
+plot.data <- summarise(groups,
+                       mean = mean(value, na.rm=TRUE),
+                       sd = sd(value, na.rm=TRUE),
+                       n = n(),
+                       se=sd/sqrt(n),
+                       ci = qt(0.975,df=n-1)*se)
+library(ggplot2)
+ggplot(plot.data, aes(x=valence, y=mean, fill = membership)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  ylim(0,7)+
+  geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.2, position=position_dodge(.9)) +
+  ggtitle("Mean rating by valence and membership")
+
+
+# Planned Comparisons of Interaction
+#Simple Effects with 2-Levels
+#Note: These can be reported as F-tests (as basically, we are doing one-way ANOVAs) or as t-values.
+library(emmeans)
+#???Contrasts 1:by membership
+Simple.Effects.By.membership<-emmeans(Interaction_GF, ~valence|membership)
+Simple.Effects.By.membership
+pairs(Simple.Effects.By.membership,adjust='none')
+
+Set1 <- list(H1 = c(-1,1))
+contrast(Simple.Effects.By.membership,Set1,adjust='none')
+test(pairs(Simple.Effects.By.membership), joint = TRUE)
+
+#???Contrast 2:by valence
+Simple.Effects.By.valence<-emmeans(Interaction_GF, ~membership|valence)
+Simple.Effects.By.valence
+pairs(Simple.Effects.By.valence,adjust='none')
+
+Set1 <- list(H1 = c(-1,1))
+contrast(Simple.Effects.By.valence,Set1,adjust='none')
+test(pairs(Simple.Effects.By.valence), joint = TRUE)
+
+
+# Post-hoc test
+#install.packages("lsmeans")
+#install.packages("multcompView")
+library("lsmeans")
+library("multcompView")
+posthoc<-lsmeans(Interaction_GF,
+                 pairwise~valence * membership,
+                 adjust="tukey")
+posthoc
+#visualize
+plot(posthoc)
+##3 way
+GF.sub_Con_1 <- subset(my_data_gender_F, Consistency == 1)
+GF.sub_Con_2 <- subset(my_data_gender_F, Consistency == 2)
+
+Interaction_GF3_C <- aov(value~consistency*valence*membership,data=my_data_gender_F)
+sum_Interaction_GF3_C<-summary(Interaction_GF3_C)
+
+Interaction_GF3_F <- aov(value~Format*valence*membership,data=my_data_gender_F)
+sum_Interaction_GF3_F<-summary(Interaction_GF3_F)
+
+Interaction_GF3_Con_1 <- aov(value~valence*membership,data=GF.sub_Con_1)
+summary(Interaction_GF3_Con_1)
+Interaction_GF3_Con_2 <- aov(value~valence*membership,data=GF.sub_Con_2)
+summary(Interaction_GF3_Con_2)
+
+
+#visualize
+library(ggplot2) 
+ggplot(data = my_data_gender_F, mapping = aes(x = valence, y = value, 
+                                           color = membership)) + 
+  facet_grid(.~ Consistency,labeller = "label_both") +
+  geom_jitter() + 
+  geom_smooth(aes(group=membership))
+
+```
+
+```{r familiarity_age, include = FALSE, result="axis"}
+# Extract columns
+my_data_extracted_A_F <- subset(my_data_original, select = c("ID", "agegroup_subj","Consistency", "Format",
+                                                             "FamYoungPos", "FamOldPos", "FamYoungNeg", "FamOldNeg"))
+summary(my_data_extracted_A_F)
+
+# Stack columns
+library(reshape2)
+my_data_age_F <- melt(my_data_extracted_A_F, id.vars=1:4)
+my_data_age_F
+
+# Define factors
+str(my_data_age_F)
+
+#Age
+age<- as.factor(my_data_age_F$agegroup_subj)
+age<- factor(age,c(1,2,3),labels = c("Young","Middle","Old"))
+#membership
+##ingroup
+my_data_age_F$membership <- ifelse(my_data_age_F$agegroup_subj==1 & my_data_age_F$variable=="FamYoungPos", "1","2")
+my_data_age_F$membership[my_data_age_F$agegroup_subj==1 & my_data_age_F$variable=="FamYoungNeg"] <- 1
+my_data_age_F$membership[my_data_age_F$agegroup_subj==3 & my_data_age_F$variable=="FamOldPos"] <- 1
+my_data_age_F$membership[my_data_age_F$agegroup_subj==3 & my_data_age_F$variable=="FamOldNeg"] <- 1
+##outgroup
+my_data_age_F$membership[my_data_age_F$agegroup_subj==1 & my_data_age_F$variable=="FamOldPos"] <- 0
+my_data_age_F$membership[my_data_age_F$agegroup_subj==1 & my_data_age_F$variable=="FamOldNeg"] <- 0
+my_data_age_F$membership[my_data_age_F$agegroup_subj==3 & my_data_age_F$variable=="FamYoungPos"] <- 0
+my_data_age_F$membership[my_data_age_F$agegroup_subj==3 & my_data_age_F$variable=="FamYoungNeg"] <- 0
+
+my_data_age_F$membership<- factor(my_data_age_F$membership,c(1,0,2),labels = c("Ingroup","Outgroup","Middlegroup"))
+#valence
+my_data_age_F$valence <- ifelse(my_data_age_F$variable=="FamOldPos", "1","0")
+my_data_age_F$valence[my_data_age_F$variable=="FamYoungPos"] <- 1
+my_data_age_F$valence<- factor(my_data_age_F$valence,c(1,0),labels = c("Positive","Negative"))
+summary(my_data_age_F)
+
+# Get descriptives
+library(psych) 
+Descriptives_AF_TTEST<-describeBy(my_data_age_F, 
+           group = my_data_age_F$membership)
+
+# Fam
+#Main effect of valence, prediction: positive > negative 
+#Independent 2-group t-test
+Ttest_AF<- aov(my_data_age_F$value~my_data_age_F$membership)
+sum_Ttest_AF<-summary(Ttest_AF)
+
+
+#visualize
+boxplot(my_data_age_F$value~my_data_age_F$valence, 
+        names=c("Fam_Pos","Fam_Neg"), 
+        main="Main effect of valence on gender-related claims", 
+        ylab="Fam rating", xlab="Valence",col=(c("gold","lightblue")))
+
+#Cohen¡¯s d for two-sample t-test
+library(lsr)
+cohensD(value~valence,
+        data = my_data_age_F)
+
+# Fam: Group membership x Valence Interaction 
+Interaction_AF<- aov(value~membership*valence,data=my_data_age_F)
+sum_Interaction_AF<-summary(Interaction_AF)
+
+#visualize
+interaction.plot(x.factor = my_data_age_F$membership, trace.factor = my_data_age_F$valence,
+                 response = my_data_age_F$value, fun = mean, 
+                 ylim = c(3,5),
+                 legend = TRUE, 
+                 xlab = "Membership", ylab="Rating",
+                 pch=c(1,19), col = c("#00AFBB", "#E7B800"))   
+# Effect size
+library(sjstats)
+library(car)
+omega_sq(Interaction_AF)
+##Field (2013) suggests the following interpretation heuristics:
+##Omega Squared = 0 - 0.01: Very small
+##Omega Squared = 0.01 - 0.06: Small
+##Omega Squared = 0.06 - 0.14: Medium
+##Omega Squared > 0.14: Large
+
+#visualize
+library(dplyr)
+groups <- group_by(my_data_age_F,membership,valence)
+plot.data <- summarise(groups,
+                       mean = mean(value, na.rm=TRUE),
+                       sd = sd(value, na.rm=TRUE),
+                       n = n(),
+                       se=sd/sqrt(n),
+                       ci = qt(0.975,df=n-1)*se)
+library(ggplot2)
+ggplot(plot.data, aes(x=membership, y=mean, fill =valence)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  ylim(0,7)+
+  geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.2, position=position_dodge(.9)) +
+  ggtitle("Mean rating by valence and membership")
+
+
+# Planned Comparisons of Interaction
+#Simple Effects with 2-Levels
+#Note: These can be reported as F-tests (as basically, we are doing one-way ANOVAs) or as t-values.
+library(emmeans)
+#???Contrasts 1:by membership
+Simple.Effects.By.membership<-emmeans(Interaction_AF, ~valence|membership)
+Simple.Effects.By.membership
+pairs(Simple.Effects.By.membership,adjust='none')
+
+Set1 <- list(H1 = c(-1,1))
+contrast(Simple.Effects.By.membership,Set1,adjust='none')
+test(pairs(Simple.Effects.By.membership), joint = TRUE)
+###membership = Middlegroup, not significant
+
+#???Contrast 2:by valence
+emcontcat  <- emmeans(Interaction_AF, ~ valence*membership,data=my_data_age_F)
+Contrast2_AF<-contrast(emcontcat, "pairwise",by="valence")
+sum_Contrast2_AF<-summary(Contrast2_AF)
+
+
+# Post-hoc test
+#install.packages("lsmeans")
+#install.packages("multcompView")
+library("lsmeans")
+library("multcompView")
+posthoc<-lsmeans(Interaction_AF,
+                 pairwise~valence * membership,
+                 adjust="tukey")
+posthoc
+#visualize
+plot(posthoc)
+##3 way
+Interaction_AF3_C <- aov(value~consistency*valence*membership,data=my_data_age_F)
+sum_Interaction_AF3_C<-summary(Interaction_AF3_C)
+
+Interaction_AF3_F <- aov(value~Format*valence*membership,data=my_data_age_F)
+sum_Interaction_AF3_F<-summary(Interaction_AF3_F)
+###faxian
+AF.sub_Con_1 <- subset(my_data_age_F, Consistency == 1)
+AF.sub_Con_2 <- subset(my_data_age_F, Consistency == 2)
+Interaction_AF3_Con_1 <- aov(value~valence*membership,data=AF.sub_Con_1)
+summary(Interaction_AF3_Con_1)
+Interaction_AF3_Con_2 <- aov(value~valence*membership,data=AF.sub_Con_2)
+summary(Interaction_AF3_Con_2)
+
+AF.sub_For_1 <- subset(my_data_age_F, Format == 1)
+AF.sub_For_2 <- subset(my_data_age_F, Format == 2)
+Interaction_AF3_For_1 <- aov(value~valence*membership,data=AF.sub_For_1)
+summary(Interaction_AF3_For_1)
+Interaction_AF3_For_2 <- aov(value~valence*membership,data=AF.sub_For_2)
+sum_Interaction_AF3_For_2<-summary(Interaction_AF3_For_2)
+
+#visualize
+ggplot(data = my_data_age_F, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Consistency) +
+  geom_jitter() + 
+  geom_smooth(aes(group=membership))
+
+ggplot(data = my_data_age_F, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Format) +
+  geom_jitter() + 
+  geom_smooth(aes(group=membership))
+my_data_age_F$Format
+```
+
+```{r Stereotypicality_gender, include = FALSE, result="axis"}
+# Extract columns
+my_data_extracted_G_F <- subset(my_data_original, select = c("ID", "gender", "Consistency","Format",
+                                                             "SterMenPos", "SterWomenPos", "SterMenNeg", "SterWomenNeg"))
+summary(my_data_extracted_G_F)
+
+# Stack columns
+library(reshape2)
+my_data_gender_S <- melt(my_data_extracted_G_F, id.vars=1:4)
+my_data_gender_S
+
+# Define factors
+str(my_data_gender_S)
+#gender
+gender<- as.factor(my_data_gender_S$gender)
+gender<- factor(gender,c(1,2),labels = c("Man","Woman"))
+#membership
+my_data_gender_S$membership <- ifelse(my_data_gender_S$gender==1 & my_data_gender_S$variable=="SterMenPos", "1","0")
+my_data_gender_S$membership[my_data_gender_S$gender==1 & my_data_gender_S$variable=="SterMenNeg"] <- 1
+my_data_gender_S$membership[my_data_gender_S$gender==2 & my_data_gender_S$variable=="SterWomenPos"] <- 1
+my_data_gender_S$membership[my_data_gender_S$gender==2 & my_data_gender_S$variable=="SterWomenNeg"] <- 1
+my_data_gender_S$membership<- factor(my_data_gender_S$membership,c(1,0),labels = c("Ingroup","Outgroup"))
+#valence
+my_data_gender_S$valence <- ifelse(my_data_gender_S$variable=="SterMenPos", "1","0")
+my_data_gender_S$valence[my_data_gender_S$variable=="SterWomenPos"] <- 1
+my_data_gender_S$valence<- factor(my_data_gender_S$valence,c(1,0),labels = c("Positive","Negative"))
+summary(my_data_gender_S)
+# Get descriptives
+library(psych) 
+Descriptives_GS_TTEST<-describeBy(my_data_gender_S, 
+           group = my_data_gender_S$membership)
+
+# Fam
+#Main effect of valence, prediction: positive > negative 
+#Independent 2-group t-test
+Ttest_GS<- lm(my_data_gender_S$value~my_data_gender_S$membership)
+sum_Ttest_GS<-summary(Ttest_GS)
+#visualize
+boxplot(my_data_gender_S$value~my_data_gender_S$membership, 
+        names=c("Ster_Pos","Ster_Neg"), 
+        main="Main effect of membership on gender-related claims", 
+        ylab="Ster rating", xlab="Membership",col=(c("gold","lightblue")))
+#Cohen¡¯s d for two-sample t-test
+library(lsr)
+cohensD(value~membership,
+        data = my_data_gender_S)
+
+# Ster: Group membership x Valence Interaction 
+Interaction_GS <- aov(value~valence*membership,data=my_data_gender_S)
+sum_Interaction_GS<- summary(Interaction_GS)
+#visualize
+interaction.plot(x.factor = my_data_gender_S$valence, trace.factor = my_data_gender_S$membership, 
+                 response = my_data_gender_S$value, fun = mean, 
+                 trace.label = "Valence",
+                 ylim = c(3,5),
+                 legend = TRUE, 
+                 xlab = "Valence", ylab="Rating",
+                 pch=c(1,19), col = c("#00AFBB", "#E7B800"))   
+# Effect size
+library(sjstats)
+library(car)
+omega_sq(Interaction_GF)
+##Field (2013) suggests the following interpretation heuristics:
+##Omega Squared = 0 - 0.01: Very small
+##Omega Squared = 0.01 - 0.06: Small
+##Omega Squared = 0.06 - 0.14: Medium
+##Omega Squared > 0.14: Large
+
+#visualize
+library(dplyr)
+groups <- group_by(my_data_gender_S, valence, membership)
+plot.data <- summarise(groups,
+                       mean = mean(value, na.rm=TRUE),
+                       sd = sd(value, na.rm=TRUE),
+                       n = n(),
+                       se=sd/sqrt(n),
+                       ci = qt(0.975,df=n-1)*se)
+library(ggplot2)
+ggplot(plot.data, aes(x=valence, y=mean, fill = membership)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  ylim(0,7)+
+  geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.2, position=position_dodge(.9)) +
+  ggtitle("Mean rating by valence and membership")
+
+
+# Planned Comparisons of Interaction
+#Simple Effects with 2-Levels
+#Note: These can be reported as F-tests (as basically, we are doing one-way ANOVAs) or as t-values.
+library(emmeans)
+#???Contrasts 1:by membership
+Simple.Effects.By.membership<-emmeans(Interaction_GS, ~valence|membership)
+Simple.Effects.By.membership
+pairs(Simple.Effects.By.membership,adjust='none')
+
+Set1 <- list(H1 = c(-1,1))
+contrast(Simple.Effects.By.membership,Set1,adjust='none')
+test(pairs(Simple.Effects.By.membership), joint = TRUE)
+
+#???Contrast 2:by valence
+Simple.Effects.By.valence<-emmeans(Interaction_GS, ~membership|valence)
+Simple.Effects.By.valence
+pairs(Simple.Effects.By.valence,adjust='none')
+
+Set1 <- list(H1 = c(-1,1))
+contrast(Simple.Effects.By.valence,Set1,adjust='none')
+test(pairs(Simple.Effects.By.valence), joint = TRUE)
+
+
+# Post-hoc test
+#install.packages("lsmeans")
+#install.packages("multcompView")
+library("lsmeans")
+library("multcompView")
+posthoc<-lsmeans(Interaction_GF,
+                 pairwise~valence * membership,
+                 adjust="tukey")
+posthoc
+#visualize
+plot(posthoc)
+
+##3 way
+Interaction_GS3_C <- aov(value~consistency*valence*membership,data=my_data_gender_S)
+sum_Interaction_GS3_C<-summary(Interaction_GS3_C)
+
+Interaction_GS3_F <- aov(value~Format*valence*membership,data=my_data_gender_S)
+sum_Interaction_GS3_F<-summary(Interaction_GS3_F)
+
+#visualize
+ggplot(data = my_data_gender_S, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Consistency) +
+  geom_jitter() + 
+  geom_smooth(aes(group=membership))
+
+```
+
+```{r Stereotypicality_age, include = FALSE, result="axis"}
+# Extract columns
+my_data_extracted_A_F <- subset(my_data_original, select = c("ID", "agegroup_subj","Consistency", "Format",
+                                                             "SterYoungPos", "SterOldPos", "SterYoungNeg", "SterOldNeg"))
+summary(my_data_extracted_A_F)
+
+# Stack columns
+library(reshape2)
+my_data_age_S <- melt(my_data_extracted_A_F, id.vars=1:4)
+my_data_age_S
+
+# Define factors
+str(my_data_age_S)
+
+#Age
+age<- as.factor(my_data_age_S$agegroup_subj)
+age<- factor(age,c(1,2,3),labels = c("Young","Middle","Old"))
+#membership
+##ingroup
+my_data_age_S$membership <- ifelse(my_data_age_S$agegroup_subj==1 & my_data_age_S$variable=="SterYoungPos", "1","2")
+my_data_age_S$membership[my_data_age_S$agegroup_subj==1 & my_data_age_S$variable=="SterYoungNeg"] <- 1
+my_data_age_S$membership[my_data_age_S$agegroup_subj==3 & my_data_age_S$variable=="SterOldPos"] <- 1
+my_data_age_S$membership[my_data_age_S$agegroup_subj==3 & my_data_age_S$variable=="SterOldNeg"] <- 1
+##outgroup
+my_data_age_S$membership[my_data_age_S$agegroup_subj==1 & my_data_age_S$variable=="SterOldPos"] <- 0
+my_data_age_S$membership[my_data_age_S$agegroup_subj==1 & my_data_age_S$variable=="SterOldNeg"] <- 0
+my_data_age_S$membership[my_data_age_S$agegroup_subj==3 & my_data_age_S$variable=="SterYoungPos"] <- 0
+my_data_age_S$membership[my_data_age_S$agegroup_subj==3 & my_data_age_S$variable=="SterYoungNeg"] <- 0
+
+my_data_age_S$membership<- factor(my_data_age_S$membership,c(1,0,2),labels = c("Ingroup","Outgroup","Middlegroup"))
+#valence
+my_data_age_S$valence <- ifelse(my_data_age_S$variable=="SterOldPos", "1","0")
+my_data_age_S$valence[my_data_age_S$variable=="SterYoungPos"] <- 1
+my_data_age_S$valence<- factor(my_data_age_S$valence,c(1,0),labels = c("Positive","Negative"))
+summary(my_data_age_S)
+
+# Get descriptives
+library(psych) 
+Descriptives_AS_TTEST<-describeBy(my_data_age_S, 
+           group = my_data_age_S$membership)
+
+# Fam
+#Main effect of valence, prediction: positive > negative 
+#Independent 2-group t-test
+Ttest_AS<- aov(my_data_age_S$value~my_data_age_S$membership)
+sum_Ttest_AS<-summary(Ttest_AS)
+
+#visualize
+boxplot(my_data_age_S$value~my_data_age_S$valence, 
+        names=c("Ster_Pos","Ster_Neg"), 
+        main="Main effect of valence on gender-related claims", 
+        ylab="Ster rating", xlab="Valence",col=(c("gold","lightblue")))
+
+#Cohen¡¯s d for two-sample t-test
+library(lsr)
+cohensD(value~valence,
+        data = my_data_age_S)
+
+# Ster: Group membership x Valence Interaction 
+Interaction_AS <- aov(value~membership*valence,data=my_data_age_S)
+sum_Interaction_AS<-summary(Interaction_AS)
+
+#visualize
+interaction.plot(x.factor = my_data_age_S$membership, trace.factor = my_data_age_S$valence,
+                 response = my_data_age_S$value, fun = mean, 
+                 ylim = c(3,5),
+                 legend = TRUE, 
+                 xlab = "Membership", ylab="Rating",
+                 pch=c(1,19), col = c("#00AFBB", "#E7B800"))   
+# Effect size
+library(sjstats)
+library(car)
+omega_sq(Interaction_AS)
+##Field (2013) suggests the following interpretation heuristics:
+##Omega Squared = 0 - 0.01: Very small
+##Omega Squared = 0.01 - 0.06: Small
+##Omega Squared = 0.06 - 0.14: Medium
+##Omega Squared > 0.14: Large
+
+#visualize
+library(dplyr)
+groups <- group_by(my_data_age_S,membership,valence)
+plot.data <- summarise(groups,
+                       mean = mean(value, na.rm=TRUE),
+                       sd = sd(value, na.rm=TRUE),
+                       n = n(),
+                       se=sd/sqrt(n),
+                       ci = qt(0.975,df=n-1)*se)
+library(ggplot2)
+ggplot(plot.data, aes(x=membership, y=mean, fill =valence)) +
+  geom_bar(stat="identity", position=position_dodge()) +
+  ylim(0,7)+
+  geom_errorbar(aes(ymin=mean-ci, ymax=mean+ci), width=.2, position=position_dodge(.9)) +
+  ggtitle("Mean rating by valence and membership")
+
+
+# Planned Comparisons of Interaction
+#Simple Effects with 2-Levels
+#Note: These can be reported as F-tests (as basically, we are doing one-way ANOVAs) or as t-values.
+library(emmeans)
+#???Contrasts 1:by membership
+Simple.Effects.By.membership<-emmeans(Interaction_AS, ~valence|membership)
+Simple.Effects.By.membership
+pairs(Simple.Effects.By.membership,adjust='none')
+
+Set1 <- list(H1 = c(-1,1))
+contrast(Simple.Effects.By.membership,Set1,adjust='none')
+test(pairs(Simple.Effects.By.membership), joint = TRUE)
+###membership = Middlegroup, not significant
+
+#???Contrast 2:by valence
+emcontcat  <- emmeans(Interaction_AS, ~ valence*membership,data=my_data_age_S)
+Contrast2_AS<-contrast(emcontcat, "pairwise",by="valence")
+sum_Contrast2_AS<-summary(Contrast2_AS)
+
+c1 <- c(0, 1, -1) 
+c2 <- c(-1, 1, 0) 
+c3 <- c(-1, 0, 1) 
+mat <- cbind(c1,c2,c3)
+contrasts(my_data_age_S$membership) <- mat
+model1 <- aov(value ~ membership, data = my_data_age_S)
+summary(model1)
+
+#Summary of the multiple comparisons
+sum_Contrast0_AS<-summary.aov(model1, split=list(membership=list("Outgroup vs. Middlegroup"=1, "Ingroup vs. Outgroup" = 2, "Ingroup vs. Middlegroup"=3))) 
+
+summary(my_data_age_S$membership)
+summary(my_data_age_S$agegroup_subj)
+
+
+
+# Post-hoc test
+#install.packages("lsmeans")
+#install.packages("multcompView")
+library("lsmeans")
+library("multcompView")
+posthoc<-lsmeans(Interaction_AS,
+                 pairwise~valence * membership,
+                 adjust="tukey")
+posthoc
+#visualize
+plot(posthoc)
+
+##3 way
+Interaction_AS3_C <- aov(value~consistency*valence*membership,data=my_data_age_S)
+sum_Interaction_AS3_C<-summary(Interaction_AS3_C)
+
+Interaction_AS3_F <- aov(value~Format*valence*membership,data=my_data_age_S)
+sum_Interaction_AS3_F<-summary(Interaction_AS3_F)
+###faxian
+AS.sub_Con_1 <- subset(my_data_age_S, Consistency == 1)
+AS.sub_Con_2 <- subset(my_data_age_S, Consistency == 2)
+Interaction_AS3_Con_1 <- aov(value~valence*membership,data=AS.sub_Con_1)
+summary(Interaction_AS3_Con_1)
+Interaction_AS3_Con_2 <- aov(value~valence*membership,data=AS.sub_Con_2)
+summary(Interaction_AS3_Con_2)
+
+AS.sub_Sor_1 <- subset(my_data_age_S, Format == 1)
+AS.sub_Sor_2 <- subset(my_data_age_S, Format == 2)
+Interaction_AS3_Sor_1 <- aov(value~valence*membership,data=AS.sub_Sor_1)
+summary(Interaction_AS3_Sor_1)
+Interaction_AS3_Sor_2 <- aov(value~valence*membership,data=AS.sub_Sor_2)
+summary(Interaction_AS3_Sor_2)
+#visualize
+ggplot(data = my_data_age_S, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Consistency) +
+  geom_jitter() + 
+  geom_smooth(aes(group=membership))
+
+```
+
+
+```{r, fig.width=6, fig.height=4, fig.cap="Three way interaction between consistency, valence and membership on the familiarity of gender-related claims."}
+ggplot(data = my_data_gender_F, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Consistency) +
+  geom_jitter() + 
+  geom_smooth(method='lm',aes(group=membership))
+```
+
+```{r, fig.width=6, fig.height=4, fig.cap="Three way interaction between format, valence and membership on the familiarity of gender-related claims."}
+ggplot(data = my_data_gender_F, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Format) +
+  geom_jitter() + 
+  geom_smooth(method='lm',aes(group=membership))
+
+```
+
+```{r, fig.width=6, fig.height=4, fig.cap="Three way interaction between consistency, valence and membership on the familiarity of age-related claims."}
+ggplot(data = my_data_age_F, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Consistency) +
+  geom_jitter() + 
+  geom_smooth(method='lm',aes(group=membership))
+```
+
+```{r, fig.width=6, fig.height=4, fig.cap="Three way interaction between format, valence and membership on the familiarity of age-related claims."}
+ggplot(data = my_data_age_F, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Format) +
+  geom_jitter() + 
+  geom_smooth(method='lm',aes(group=membership))
+```
+
+
+#Data analysis
+
+**RStudio Package.** I used `r cite_r("r-references.bib")` for all the analyses.
+
+**Dataset.** I conducted the analysis using the data set Study1_ready_short. 
+
+**Data cleansing.** I cleaned the data by removing subjects who do not identify with any gender category (gender = 3) and the rows with missing values (NAs).
+
+**Subdatasets.** Before executing main analysis in R, I created sub-datasets for each dependent variables (truth, acceptability, familiarity, stereotypicality, and positivity), for each experiments (experiment 1a and 1b). 
+
+Before testing the predictions for judgments of truth, I first extracted and stacked the columns ('ID', 'gender', 'Consistency', 'Format', 'TruthMenPos', 'TruthWomenPos', 'TruthMenNeg', 'TruthWomenNeg') to create the data set my_data_gender_T. Then, I created the data set my_data_age_T, which includes the columns named: 'ID', 'gender', 'Consistency', 'Format', 'TruthOldPos', 'TruthYoungPos', 'TruthOldNeg', 'TruthYoungNeg'.
+
+In the same way, I created the following subdatasets: my_data_gender_A (acceptability), my_data_age_A, my_data_gender_F (familiarity), my_data_age_F, my_data_gender_S (stereotypicality), my_data_age_S, my_data_gender_P (positivity), and my_data_age_P.
+
+**Gender groups.** The cleaned dataset comprised of 85 male subjects and 98 female subjects.
+
+**Age groups.** Our subjects comprised of 61 younger people, 78 middle-aged people and 44 older people. Among them, 2 younger subjects and 15 older subjects identified themselves as middle-aged. None of the subjects identified with the 'wrong' age group (younger participants identifying with older people, or older participants identifying with younger people). Such that I used their 'subjective' age group in the analyses (young: 59, middle-aged: 95, old: 29). Moreover, I distinguish them between 3 rather than 2 age groups: younger, middle-aged, older (middle-aged = 51.91% > 25%).
+
+##**Analysis plan.**
+
+**Main effect and interaction effect on the judgement of truth.** 
+According to the pre-analysis plan that we registered, first, a linear regression will be performed on data sets my_data_gender_T and my_data_age_T, which involves testing the main effect of valence on the judgments of truth. Then a two way ANOVA will be carried out to test the interaction effect between group membership and valence and to test 2 planned contrasts of the interaction. 
+
+**Main effect and interaction effect on the judgement of social acceptability.**
+Accordingly, the regression analysis on data sets my_data_gender_A and my_data_age_A involve testing the main effect of valence on the judgments of acceptability, and testing the interaction effect between group membership and valence (1 planned contrast). 
+
+**Exploratory analysis.**
+In the exploratory analysis, the regression analysis will be performed on related subdatasets. The  analysis involves testing the main effect of group membership and the interaction effect between group membership and valence on the perceived familiarity, stereotypicality and positivity. Further, a linear regression will be carried out to test if consistency and format of the claims affect how group membership and valence affect various dependent variables.
+
+
+
+# Results of Judgments of truth
+
+  **Analyses for Experiment 1a (Gender-related claims).**
+A significant main effect of valence (positive, negative) on the judgments of truth ($t [`r sum_Ttest_GT$df[2]`]$ = `r (sum_Ttest_GT$coefficients[2,3])` , _p_ = `r f_num(sum_Ttest_GT$coefficients[2,4], digits= 3)`) was found, with positively valenced claims (_M_ = `r Descriptives_GT_TTEST[["Positive"]][["mean"]][6]`, _SD_ = `r Descriptives_GT_TTEST[["Positive"]][["sd"]][6]`) receiving higher scores on truth than negatively valenced ones (_M_ = `r Descriptives_GT_TTEST[["Negative"]][["mean"]][6]`, _SD_ = `r Descriptives_GT_TTEST[["Negative"]][["sd"]][6]`). 
+
+
+Additionally no significant interaction was found between valence and group membership (ingroup, outgroup) on the judgments of truth ($F [`r sum_Interaction_GT[[1]][["Df"]][3] `, `r sum_Interaction_GT[[1]][["Df"]][4]`]$ = `r (sum_Interaction_GT[[1]][["F value"]][3])`, _p_ = `r f_num(sum_Interaction_GT[[1]][["Pr(>F)"]][3], digits= 3)`). 
+
+
+Planned contrasts showed that subjects believed positively valenced claims were significantly truer than negative valenced ones when the claims are targeted at their ingroup ($t [`r sum_Contrast1_GT$df[1]`]$ = `r (sum_Contrast1_GT$t.ratio[1])` , _p_ = `r f_num(sum_Contrast1_GT$p.value[1], digits= 3)`), but there were no difference between valences when the claims are targeted at their outgroup ($t [`r sum_Contrast1_GT$df[2]`]$ = `r (sum_Contrast1_GT$t.ratio[2])` , _p_ = `r f_num(sum_Contrast1_GT$p.value[2], digits= 3)`). Moreover, no differences were found between ingroupers and outgroupers on the the judgement of truth in the positive condition  ($t [`r sum_Contrast2_GT$df[1]`]$ = `r (sum_Contrast2_GT$t.ratio[1])` , _p_ = `r f_num(sum_Contrast2_GT$p.value[1], digits= 3)`) , and negative condition  ($t [`r sum_Contrast2_GT$df[2]`]$ = `r (sum_Contrast2_GT$t.ratio[2])` , _p_ = `r f_num(sum_Contrast2_GT$p.value[2], digits= 3)`).
+
+
+
+  **Analyses for Experiment 1b (Age-related claims).**
+A significant main effect of valence (positive, negative) on the judgments of truth ($t [`r sum_Ttest_AT$df[2]`]$ = `r (sum_Ttest_AT$coefficients[2,3])` , _p_ = `r f_num(sum_Ttest_AT$coefficients[2,4], digits= 3)`) was found, with positively valenced claims (_M_ = `r Descriptives_AT_TTEST[["Positive"]][["mean"]][6]`, _SD_ = `r Descriptives_AT_TTEST[["Positive"]][["sd"]][6]`) receiving higher scores on truth than negatively valenced ones (_M_ = `r Descriptives_AT_TTEST[["Negative"]][["mean"]][6]`, _SD_ = `r Descriptives_AT_TTEST[["Negative"]][["sd"]][6]`). 
+
+Additionally no significant interaction was found between valence and group membership (ingroup, outgroup, middle-aged) on the judgments of truth ($F [`r sum_Interaction_AT[[1]][["Df"]][3] `, `r sum_Interaction_AT[[1]][["Df"]][4]`]$ = `r (sum_Interaction_AT[[1]][["F value"]][3])`, _p_ = `r f_num(sum_Interaction_AT[[1]][["Pr(>F)"]][3], digits= 3)`). 
+
+
+Planned contrasts showed that subjects tend to rate positively valenced claims as significantly truer than negative valenced ones in the ingroup condition ($t [`r sum_Contrast1_AT$df[1]`]$ = `r (sum_Contrast1_AT$t.ratio[1])` , _p_ = `r f_num(sum_Contrast1_AT$p.value[1], digits= 3)`) and in the outgroup condition ($t [`r sum_Contrast1_AT$df[2]`]$ = `r (sum_Contrast1_AT$t.ratio[2])` , _p_ = `r f_num(sum_Contrast1_AT$p.value[2], digits= 3)`). Yet among middle-aged people, the difference is marginally significant ($t [`r sum_Contrast1_AT$df[3]`]$ = `r (sum_Contrast1_AT$t.ratio[3])` , _p_ = `r f_num(sum_Contrast1_AT$p.value[3], digits= 3)`). Futher, there were no significant difference between ingroupers and outgroupers on the the judgement of truth when the claims are either positively valenced ($t [`r sum_Contrast2_AT$df[1]`]$ = `r (sum_Contrast2_AT$t.ratio[1])` , _p_ = `r f_num(sum_Contrast2_AT$p.value[1], digits= 3)`), or negatively valenced ($t [`r sum_Contrast2_AT$df[4]`]$ = `r (sum_Contrast2_AT$t.ratio[4])` , _p_ = `r f_num(sum_Contrast2_AT$p.value[4], digits= 3)`).
+
+
+
+
+# Results of Judgments of acceptability
+
+  **Analyses for Experiment 1a (Gender-related claims).** A significant main effect of valence (positive, negative) on the judgments of acceptability ($t [`r sum_Ttest_GA$df[2]`]$ = `r (sum_Ttest_GA$coefficients[2,3])` , _p_ = `r f_num(sum_Ttest_GA$coefficients[2,4], digits= 3)`) was found, with positively valenced claims (_M_ = `r Descriptives_GA_TTEST[["Positive"]][["mean"]][6]`, _SD_ = `r Descriptives_GA_TTEST[["Positive"]][["sd"]][6]`) receiving higher scores on acceptability than negatively valenced ones (_M_ = `r Descriptives_GA_TTEST[["Negative"]][["mean"]][6]`, _SD_ = `r Descriptives_GA_TTEST[["Negative"]][["sd"]][6]`). 
+
+Additionally no significant interaction was found between valence and group membership (ingroup, outgroup) on the judgments of acceptability ($F [`r sum_Interaction_GA[[1]][["Df"]][3] `, `r sum_Interaction_GA[[1]][["Df"]][4]`]$ = `r (sum_Interaction_GA[[1]][["F value"]][3])`, _p_ = `r f_num(sum_Interaction_GA[[1]][["Pr(>F)"]][3], digits= 3)`). 
+
+Planned contrasts showed that subjects are not significantly more acceptable to positive claims that targeted at their ingroup than those targeted at outgroup ($t [`r sum_Contrast1_GA$df[1]`]$ = `r (sum_Contrast1_GA$t.ratio[1])` , _p_ = `r f_num(sum_Contrast1_GA$p.value[1], digits= 3)`). Also, subjects are not significantly more acceptable to negative claims which targeted at their outgroup than those targeted at ingroup ($t [`r sum_Contrast1_GA$df[2]`]$ = `r (sum_Contrast1_GA$t.ratio[2])` , _p_ = `r f_num(sum_Contrast1_GA$p.value[2], digits= 3)`).
+
+
+  **Analyses for Experiment 1b (Age-related claims).** 
+A significant main effect of valence (positive, negative) on the judgments of acceptability ($t [`r sum_Ttest_AA$df[2]`]$ = `r (sum_Ttest_AA$coefficients[2,3])` , _p_ = `r f_num(sum_Ttest_AA$coefficients[2,4], digits= 3)`) was found, with positively valenced claims (_M_ = `r Descriptives_AA_TTEST[["Positive"]][["mean"]][6]`, _SD_ = `r Descriptives_AA_TTEST[["Positive"]][["sd"]][6]`) receiving higher scores on acceptability than negatively valenced ones (_M_ = `r Descriptives_AA_TTEST[["Negative"]][["mean"]][6]`, _SD_ = `r Descriptives_AA_TTEST[["Negative"]][["sd"]][6]`). 
+
+Additionally no significant interaction was found between valence and group membership (ingroup, outgroup, middle-aged) on the judgments of acceptability ($F [`r sum_Interaction_AA[[1]][["Df"]][3] `, `r sum_Interaction_AA[[1]][["Df"]][4]`]$ = `r (sum_Interaction_AA[[1]][["F value"]][3])`, _p_ = `r f_num(sum_Interaction_AA[[1]][["Pr(>F)"]][3], digits= 3)`). 
+
+Planned contrasts showed that subjects are not significantly more acceptable to positive claims that targeted at their ingroup than those targeted at outgroup ($t [`r sum_Contrast1_AA$df[1]`]$ = `r (sum_Contrast1_AA$t.ratio[1])` , _p_ = `r f_num(sum_Contrast1_AA$p.value[1], digits= 3)`). Also, subjects are not significantly more acceptable to negative claims which targeted at their outgroup than those targeted at ingroup ($t [`r sum_Contrast1_AA$df[4]`]$ = `r (sum_Contrast1_AA$t.ratio[4])` , _p_ = `r f_num(sum_Contrast1_AA$p.value[4], digits= 3)`).
+
+
+#Results of exploratory analysis
+
+##**Judgments of familiarity**
+
+  **Analyses for Experiment 1a (Gender-related claims).**
+There was no significant main effect of membership (ingroup, outgroup) on the judgments of familiarity ($t [`r sum_Ttest_GF$df[2]`]$ = `r (sum_Ttest_GF$coefficients[2,3])` , _p_ = `r f_num(sum_Ttest_GF$coefficients[2,4], digits= 3)`), with ingroup-targeted cliams (_M_ = `r Descriptives_GF_TTEST[["Ingroup"]][["mean"]][6]`, _SD_ = `r Descriptives_GF_TTEST[["Ingroup"]][["sd"]][6]`) receiving slightly higher scores on familiarity than those targeted at outgoup (_M_ = `r Descriptives_GF_TTEST[["Outgroup"]][["mean"]][6]`, _SD_ = `r Descriptives_GF_TTEST[["Outgroup"]][["sd"]][6]`).
+
+Additionally no significant interaction was found between valence (positive, negative) and group membership on the judgments of familiarity ($F [`r sum_Interaction_GF[[1]][["Df"]][3] `, `r sum_Interaction_GF[[1]][["Df"]][4]`]$ = `r (sum_Interaction_GF[[1]][["F value"]][3])`, _p_ = `r f_num(sum_Interaction_GF[[1]][["Pr(>F)"]][3], digits= 3)`). 
+
+The three-way interaction between consistency (stereotypical, counter-stereotypical), valence and group membership is also not significant ($F [`r sum_Interaction_GF3_C[[1]][["Df"]][7] `, `r sum_Interaction_GF3_C[[1]][["Df"]][8]`]$ = `r (sum_Interaction_GF3_C[[1]][["F value"]][7])`, _p_ = `r f_num(sum_Interaction_GF3_C[[1]][["Pr(>F)"]][7], digits= 3)`). The three-way interaction between format (implicit, explicit), valence and group membership is also not significant ($F [`r sum_Interaction_GF3_F[[1]][["Df"]][7] `, `r sum_Interaction_GF3_F[[1]][["Df"]][8]`]$ = `r (sum_Interaction_GF3_F[[1]][["F value"]][7])`, _p_ = `r f_num(sum_Interaction_GF3_F[[1]][["Pr(>F)"]][7], digits= 3)`).
+
+  **Analyses for Experiment 1b (Age-related claims).**
+A one-way ANOVA was conducted to compare the effect of group membership on judgments of familiarity, in ingroup condition (_M_ = `r Descriptives_AF_TTEST[["Ingroup"]][["mean"]][6]`, _SD_ = `r Descriptives_AF_TTEST[["Ingroup"]][["sd"]][6]`), outgroup condition (_M_ = `r Descriptives_AF_TTEST[["Outgroup"]][["mean"]][6]`, _SD_ = `r Descriptives_AF_TTEST[["Outgroup"]][["sd"]][6]`) and middle group condition (_M_ = `r Descriptives_AF_TTEST[["Middlegroup"]][["mean"]][6]`, _SD_ = `r Descriptives_AF_TTEST[["Middlegroup"]][["sd"]][6]`). No significant effect of membership on perceived familiarity ($F [`r sum_Ttest_AF[[1]][["Df"]][1]`, `r sum_Ttest_AF[[1]][["Df"]][2]`]$ = `r (sum_Ttest_AF[[1]][["F value"]][1])` , _p_ = `r f_num(sum_Ttest_AF[[1]][["Pr(>F)"]][1], digits= 3)`) was found.
+
+Additionally no significant interaction was found between valence (positive, negative) and group membership on the judgments of familiarity ($F [`r sum_Interaction_AF[[1]][["Df"]][3] `, `r sum_Interaction_AF[[1]][["Df"]][4]`]$ = `r (sum_Interaction_AF[[1]][["F value"]][3])`, _p_ = `r f_num(sum_Interaction_AF[[1]][["Pr(>F)"]][3], digits= 3)`). 
+
+The three-way interaction between consistency (stereotypical, counter-stereotypical), valence and group membership is also not significant ($F [`r sum_Interaction_AF3_C[[1]][["Df"]][7] `, `r sum_Interaction_AF3_C[[1]][["Df"]][8]`]$ = `r (sum_Interaction_AF3_C[[1]][["F value"]][7])`, _p_ = `r f_num(sum_Interaction_AF3_C[[1]][["Pr(>F)"]][7], digits= 3)`). The three-way interaction between format (implicit, explicit), valence and group membership is also not significant ($F [`r sum_Interaction_AF3_F[[1]][["Df"]][7] `, `r sum_Interaction_AF3_F[[1]][["Df"]][8]`]$ = `r (sum_Interaction_AF3_F[[1]][["F value"]][7])`, _p_ = `r f_num(sum_Interaction_AF3_F[[1]][["Pr(>F)"]][7], digits= 3)`). All the Post-Hoc Contrasts are also not significant, except that while the presented claims are explicit (format level=2), membership has marginally significant effect on the judgement of familiarity ($F [`r sum_Interaction_AF3_For_2[[1]][["Df"]][2] `, `r sum_Interaction_AF3_For_2[[1]][["Df"]][4]`]$ = `r (sum_Interaction_AF3_For_2[[1]][["F value"]][2])`, _p_ = `r f_num(sum_Interaction_AF3_For_2[[1]][["Pr(>F)"]][2], digits= 3)`).
+
+
+##**Judgments of stereotypicality**
+
+  **Analyses for Experiment 1a (Gender-related claims).**
+There was no significant main effect of membership (ingroup, outgroup) on the judgments of stereotypicality ($t [`r sum_Ttest_GS$df[2]`]$ = `r (sum_Ttest_GS$coefficients[2,3])` , _p_ = `r f_num(sum_Ttest_GS$coefficients[2,4], digits= 3)`), with ingroup-targeted cliams (_M_ = `r Descriptives_GS_TTEST[["Ingroup"]][["mean"]][6]`, _SD_ = `r Descriptives_GS_TTEST[["Ingroup"]][["sd"]][6]`) receiving slightly higher scores on stereotypicality than those targeted at outgoup (_M_ = `r Descriptives_GS_TTEST[["Outgroup"]][["mean"]][6]`, _SD_ = `r Descriptives_GS_TTEST[["Outgroup"]][["sd"]][6]`).
+
+Additionally no significant interaction was found between valence (positive, negative) and group membership on the judgments of stereotypicality ($F [`r sum_Interaction_GS[[1]][["Df"]][3] `, `r sum_Interaction_GS[[1]][["Df"]][4]`]$ = `r (sum_Interaction_GS[[1]][["F value"]][3])`, _p_ = `r f_num(sum_Interaction_GS[[1]][["Pr(>F)"]][3], digits= 3)`). 
+
+The three-way interaction between consistency (stereotypical, counter-stereotypical), valence and group membership is also not significant ($F [`r sum_Interaction_GS3_C[[1]][["Df"]][7] `, `r sum_Interaction_GS3_C[[1]][["Df"]][8]`]$ = `r (sum_Interaction_GS3_C[[1]][["F value"]][7])`, _p_ = `r f_num(sum_Interaction_GS3_C[[1]][["Pr(>F)"]][7], digits= 3)`). The three-way interaction between format (implicit, explicit), valence and group membership is also not significant ($F [`r sum_Interaction_GS3_F[[1]][["Df"]][7] `, `r sum_Interaction_GS3_F[[1]][["Df"]][8]`]$ = `r (sum_Interaction_GS3_F[[1]][["F value"]][7])`, _p_ = `r f_num(sum_Interaction_GS3_F[[1]][["Pr(>F)"]][7], digits= 3)`).
+
+  **Analyses for Experiment 1b (Age-related claims).**
+A one-way ANOVA was conducted to compare the effect of group membership on judgments of stereotypicality, in ingroup condition (_M_ = `r Descriptives_AS_TTEST[["Ingroup"]][["mean"]][6]`, _SD_ = `r Descriptives_AS_TTEST[["Ingroup"]][["sd"]][6]`), outgroup condition (_M_ = `r Descriptives_AS_TTEST[["Outgroup"]][["mean"]][6]`, _SD_ = `r Descriptives_AS_TTEST[["Outgroup"]][["sd"]][6]`) and middle group condition (_M_ = `r Descriptives_AS_TTEST[["Middlegroup"]][["mean"]][6]`, _SD_ = `r Descriptives_AS_TTEST[["Middlegroup"]][["sd"]][6]`). A significant effect of membership on perceived stereotypicality ($F [`r sum_Ttest_AS[[1]][["Df"]][1]`, `r sum_Ttest_AS[[1]][["Df"]][2]`]$ = `r (sum_Ttest_AS[[1]][["F value"]][1])` , _p_ = `r f_num(sum_Ttest_AS[[1]][["Pr(>F)"]][1], digits= 3)`) was found. 
+
+Specifically, middle group members tend to judge positive cliams as significantly less stereotypical, compared to ourgoupers($t [`r sum_Contrast2_AS$df[3]`]$ = `r (sum_Contrast2_AS$t.ratio[3])` , _p_ = `r f_num(sum_Contrast2_AS$p.value[3], digits= 3)`), and marginally significantly less stereotypical compared to ingroupers ($t [`r sum_Contrast2_AS$df[2]`]$ = `r (sum_Contrast2_AS$t.ratio[2])` , _p_ = `r f_num(sum_Contrast2_AS$p.value[2], digits= 3)`). Also, middle groupers perceive the negatively velanced cliams as significantly less stereotypical, compared to ingroupers ($t [`r sum_Contrast2_AS$df[5]`]$ = `r (sum_Contrast2_AS$t.ratio[5])` , _p_ = `r f_num(sum_Contrast2_AS$p.value[5], digits= 3)`) and ourgoupers ($t [`r sum_Contrast2_AS$df[6]`]$ = `r (sum_Contrast2_AS$t.ratio[6])` , _p_ = `r f_num(sum_Contrast2_AS$p.value[6], digits= 3)`).
+Additionally, subjects perceive positively valenced cliams as less stereotypical when cliams are targeted at their ingroup than those targeted at outgroup ($t [`r sum_Contrast2_AS$df[1]`]$ = `r (sum_Contrast2_AS$t.ratio[1])` , _p_ = `r f_num(sum_Contrast2_AS$p.value[1], digits= 3)`), however, when the cliams are negatively velanced, ingroupers would perceive presented claims as more sterotypical compared to outgroupers ($t [`r sum_Contrast2_AS$df[4]`]$ = `r (sum_Contrast2_AS$t.ratio[4])` , _p_ = `r f_num(sum_Contrast2_AS$p.value[4], digits= 3)`). Both of the differences are not significant at the alpha level of 0.05.
+
+Additionally no significant interaction was found between valence (positive, negative) and group membership on the judgments of stereotypicality ($F [`r sum_Interaction_AS[[1]][["Df"]][3] `, `r sum_Interaction_AS[[1]][["Df"]][4]`]$ = `r (sum_Interaction_AS[[1]][["F value"]][3])`, _p_ = `r f_num(sum_Interaction_AS[[1]][["Pr(>F)"]][3], digits= 3)`). 
+
+The three-way interaction between consistency (stereotypical, counter-stereotypical), valence and group membership is not significant ($F [`r sum_Interaction_AS3_C[[1]][["Df"]][7] `, `r sum_Interaction_AS3_C[[1]][["Df"]][8]`]$ = `r (sum_Interaction_AS3_C[[1]][["F value"]][7])`, _p_ = `r f_num(sum_Interaction_AS3_C[[1]][["Pr(>F)"]][7], digits= 3)`). The three-way interaction between format (implicit, explicit), valence and group membership is also not significant ($F [`r sum_Interaction_AS3_F[[1]][["Df"]][7] `, `r sum_Interaction_AS3_F[[1]][["Df"]][8]`]$ = `r (sum_Interaction_AS3_F[[1]][["F value"]][7])`, _p_ = `r f_num(sum_Interaction_AS3_F[[1]][["Pr(>F)"]][7], digits= 3)`).
+  
+
+##**Judgments of positivity**
+
+  **Analyses for Experiment 1a (Gender-related claims).**
+There was no significant main effect of membership (ingroup, outgroup) on the judgments of positivity ($t [`r sum_Ttest_GP$df[2]`]$ = `r (sum_Ttest_GP$coefficients[2,3])` , _p_ = `r f_num(sum_Ttest_GP$coefficients[2,4], digits= 3)`), with outgroup-targeted cliams (_M_ = `r Descriptives_GP_TTEST[["Outgroup"]][["mean"]][6]`, _SD_ = `r Descriptives_GP_TTEST[["Outgroup"]][["sd"]][6]`) receiving slightly higher scores on positivity than those targeted at ingroup (_M_ = `r Descriptives_GP_TTEST[["Ingroup"]][["mean"]][6]`, _SD_ = `r Descriptives_GP_TTEST[["Ingroup"]][["sd"]][6]`).
+
+Additionally there is a marginally significant interaction was found between valence (positive, negative) and group membership on the judgments of positivity ($F [`r sum_Interaction_GP[[1]][["Df"]][3] `, `r sum_Interaction_GP[[1]][["Df"]][4]`]$ = `r (sum_Interaction_GP[[1]][["F value"]][3])`, _p_ = `r f_num(sum_Interaction_GP[[1]][["Pr(>F)"]][3], digits= 3)`). 
+
+Post-hoc comparisons showed subjects believed that positively valenced claims were significantly more positive than negative valenced ones both when the they are targeted at ingroup ($t [`r sum_Contrast1_GP$df[1]`]$ = `r (sum_Contrast1_GP$t.ratio[1])` , _p_ = `r f_num(sum_Contrast1_GP$p.value[1], digits= 3)`) and outgroup ($t [`r sum_Contrast1_GP$df[2]`]$ = `r (sum_Contrast1_GP$t.ratio[2])` , _p_ = `r f_num(sum_Contrast1_GP$p.value[2], digits= 3)`). Moreover, no significant differences were found between ingroupers and outgroupers on the the judgement of positivity in the positive condition ($t [`r sum_Contrast2_GP$df[1]`]$ = `r (sum_Contrast2_GP$t.ratio[1])` , _p_ = `r f_num(sum_Contrast2_GP$p.value[1], digits= 3)`) , and negative condition ($t [`r sum_Contrast2_GP$df[2]`]$ = `r (sum_Contrast2_GP$t.ratio[2])` , _p_ = `r f_num(sum_Contrast2_GP$p.value[2], digits= 3)`).
+
+
+The three-way interaction between consistency (stereotypical, counter-stereotypical), valence and group membership is also not significant ($F [`r sum_Interaction_GP3_C[[1]][["Df"]][7] `, `r sum_Interaction_GP3_C[[1]][["Df"]][8]`]$ = `r (sum_Interaction_GP3_C[[1]][["F value"]][7])`, _p_ = `r f_num(sum_Interaction_GP3_C[[1]][["Pr(>F)"]][7], digits= 3)`). The three-way interaction between format (implicit, explicit), valence and group membership is also not significant ($F [`r sum_Interaction_GP3_F[[1]][["Df"]][7] `, `r sum_Interaction_GP3_F[[1]][["Df"]][8]`]$ = `r (sum_Interaction_GP3_F[[1]][["F value"]][7])`, _p_ = `r f_num(sum_Interaction_GP3_F[[1]][["Pr(>F)"]][7], digits= 3)`).
+
+  **Analyses for Experiment 1b (Age-related claims).**
+A one-way between subjects ANOVA was conducted to compare the effect of group membership on judgments of positivity, in ingroup condition (_M_ = `r Descriptives_AP_TTEST[["Ingroup"]][["mean"]][6]`, _SD_ = `r Descriptives_AP_TTEST[["Ingroup"]][["sd"]][6]`), outgroup condition (_M_ = `r Descriptives_AP_TTEST[["Outgroup"]][["mean"]][6]`, _SD_ = `r Descriptives_AP_TTEST[["Outgroup"]][["sd"]][6]`) and middle group condition (_M_ = `r Descriptives_AP_TTEST[["Middlegroup"]][["mean"]][6]`, _SD_ = `r Descriptives_AP_TTEST[["Middlegroup"]][["sd"]][6]`). No significant effect of membership on perceived positivity ($F [`r sum_Ttest_AP[[1]][["Df"]][1]`, `r sum_Ttest_AP[[1]][["Df"]][2]`]$ = `r (sum_Ttest_AP[[1]][["F value"]][1])` , _p_ = `r f_num(sum_Ttest_AP[[1]][["Pr(>F)"]][1], digits= 3)`) was found.
+
+Additionally no significant interaction was found between valence (positive, negative) and group membership on the judgments of positivity ($F [`r sum_Interaction_AP[[1]][["Df"]][3] `, `r sum_Interaction_AP[[1]][["Df"]][4]`]$ = `r (sum_Interaction_AP[[1]][["F value"]][3])`, _p_ = `r f_num(sum_Interaction_AP[[1]][["Pr(>F)"]][3], digits= 3)`). 
+
+The three-way interaction between consistency (stereotypical, counter-stereotypical), valence and group membership is also not significant ($F [`r sum_Interaction_AP3_C[[1]][["Df"]][7] `, `r sum_Interaction_AP3_C[[1]][["Df"]][8]`]$ = `r (sum_Interaction_AP3_C[[1]][["F value"]][7])`, _p_ = `r f_num(sum_Interaction_AP3_C[[1]][["Pr(>F)"]][7], digits= 3)`). The three-way interaction between format (implicit, explicit), valence and group membership is significant ($F [`r sum_Interaction_AP3_F[[1]][["Df"]][7] `, `r sum_Interaction_AP3_F[[1]][["Df"]][8]`]$ = `r (sum_Interaction_AP3_F[[1]][["F value"]][7])`, _p_ = `r f_num(sum_Interaction_AP3_F[[1]][["Pr(>F)"]][7], digits= 3)`). Specifically, valence (positive, negative) has a significant effect on positivity
+($F [`r sum_Interaction_AP3_F[[1]][["Df"]][2] `, `r sum_Interaction_AP3_F[[1]][["Df"]][8]`]$ = `r (sum_Interaction_AP3_F[[1]][["F value"]][2])`, _p_ = `r f_num(sum_Interaction_AP3_F[[1]][["Pr(>F)"]][2], digits= 3)`). Also, there is a significant interaction between format and valence ($F [`r sum_Interaction_AP3_F[[1]][["Df"]][4] `, `r sum_Interaction_AP3_F[[1]][["Df"]][8]`]$ = `r (sum_Interaction_AP3_F[[1]][["F value"]][4])`, _p_ = `r f_num(sum_Interaction_AP3_F[[1]][["Pr(>F)"]][4], digits= 3)`).
+
+
+```{r, fig.width=6, fig.height=4, fig.cap="Three way interaction between consistency, valence and membership on the stereotypicality of gender-related claims."}
+ggplot(data = my_data_gender_S, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Consistency) +
+  geom_jitter() + 
+  geom_smooth(method='lm',aes(group=membership))
+```
+
+```{r, fig.width=6, fig.height=4, fig.cap="Three way interaction between format, valence and membership on the stereotypicality of gender-related claims."}
+ggplot(data = my_data_gender_S, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Format) +
+  geom_jitter() + 
+  geom_smooth(method='lm',aes(group=membership))
+
+```
+
+```{r, fig.width=6, fig.height=4, fig.cap="Three way interaction between consistency, valence and membership on the stereotypicality of age-related claims."}
+ggplot(data = my_data_age_S, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Consistency) +
+  geom_jitter() + 
+  geom_smooth(method='lm',aes(group=membership))
+```
+
+```{r, fig.width=6, fig.height=4, fig.cap="Three way interaction between format, valence and membership on the stereotypicality of age-related claims."}
+ggplot(data = my_data_age_S, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Format) +
+  geom_jitter() + 
+  geom_smooth(method='lm',aes(group=membership))
+```
+
+
+```{r, fig.width=6, fig.height=4, fig.cap="Three way interaction between consistency, valence and membership on the positivity of gender-related claims."}
+ggplot(data = my_data_gender_P, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Consistency) +
+  geom_jitter() + 
+  geom_smooth(method='lm',aes(group=membership))
+```
+
+```{r, fig.width=6, fig.height=4, fig.cap="Three way interaction between format, valence and membership on the positivity of gender-related claims."}
+ggplot(data = my_data_gender_P, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Format) +
+  geom_jitter() + 
+  geom_smooth(method='lm',aes(group=membership))
+
+```
+
+```{r, fig.width=6, fig.height=4, fig.cap="Three way interaction between consistency, valence and membership on the positivity of age-related claims."}
+ggplot(data = my_data_age_P, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Consistency) +
+  geom_jitter() + 
+  geom_smooth(method='lm',aes(group=membership))
+```
+
+```{r, fig.width=6, fig.height=4, fig.cap="Three way interaction between format, valence and membership on the positivity of age-related claims."}
+ggplot(data = my_data_age_P, mapping = aes(x = valence, y = value, 
+                                              color = membership)) + 
+  facet_grid(.~ Format) +
+  geom_jitter() + 
+  geom_smooth(method='lm',aes(group=membership))
+```
+
+\newpage
+
+# References
+```{r create_r-references}
+r_refs(file = "r-references.bib")
+```
+
+\begingroup
+\setlength{\parindent}{-0.5in}
+\setlength{\leftskip}{0.5in}
+
+<div id = "refs"></div>
+\endgroup
+
+
+
+
